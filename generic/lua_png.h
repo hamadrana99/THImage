@@ -17,7 +17,7 @@ static int libpng_(Main_load)(const char *file_name,
                               int *bit_depth_to_return);              
 
 static int libpng_(Main_save)(const char *file_name,
-                              THByteTensor* tensor_dest,			        //destination tensor, set to NULL if saving to file
+                              THByteTensor* tensor_dest,			   //destination tensor, set to NULL if saving to file
                               THTensor* tensor)	;                     //source tensor
                               
 static int libpng_(Main_size)(const char *filename, 
