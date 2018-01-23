@@ -1,8 +1,7 @@
 #ifndef TH_GENERIC_FILE
 #define TH_GENERIC_FILE "generic/ppm.c"
 #else
-#include "ppm.h"
-static int libppm_(Main_size)(const char *filename, int *channels, int *height, int *width)
+int libppm_(Main_size)(const char *filename, int *channels, int *height, int *width)
 {
   FILE* fp = fopen ( filename, "r" );
   if ( !fp ) {
@@ -48,7 +47,7 @@ static int libppm_(Main_size)(const char *filename, int *channels, int *height, 
   return 3;
 }
 
-static int libppm_(Main_load)(const char *filename,
+int libppm_(Main_load)(const char *filename,
 								THTensor *tensor)			//destination
 {
   FILE* fp = fopen ( filename, "r" );

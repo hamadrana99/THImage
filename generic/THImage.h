@@ -2,15 +2,9 @@
 #define TH_GENERIC_FILE "generic/THImage.h"
 #else
 
-#include "jpeg.h"
-#include "lua_png.h"
-#include "ppm.h"
-#include "image.h"
-#include <TH.h>
-#include <stdio.h>
 THTensor* image_(load)(const char* filename, int depth);        //depth is the number of channels
 THLongTensor* image_(getSize)(const char* filename);     //returns size tensor
-void image_(save)(const char* filename, THTensor* src);
+void image_(save)(char* filename, THTensor* src);
 void image_(crop)(THTensor* src, THTensor*dst, long startx, long starty, long endx, long endy);
 void image_(translate)(THTensor* src, THTensor* dst, long x, long y);
 void image_(scale)(THTensor* src, THTensor* dst, long width, long height, const char* mode);

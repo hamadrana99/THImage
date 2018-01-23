@@ -1,9 +1,8 @@
 #ifndef TH_GENERIC_FILE
 #define TH_GENERIC_FILE "generic/THImage.c"
 #else
-#include "THImage.h"
 
-THTensor* todepth(THTensor* src, int depth)
+THTensor* image_(todepth)(THTensor* src, int depth)
 {
 	THTensor *dst;
 	if (depth ==1)							//desired is 1 channel, return HxW
@@ -14,7 +13,7 @@ THTensor* todepth(THTensor* src, int depth)
 		}
 		else if (src->size[0]==1)			//loaded image is 1xHxW
 		{
-			THTensor_select(dst,src,0,0);
+			THTensor_(select)(dst,src,0,0);
 		}
 		else if (src->size[0]==2)			//loaded image has 2 channels
 		{
@@ -30,7 +29,7 @@ THTensor* todepth(THTensor* src, int depth)
 		{
 			THTensor* dst = THTensor_(newWithSize2d)(src->size[1],src->size[2]);
 			THTensor* three_channel_slice;
-			THTensor_(narrow)(three_channel_slice, src, 1,1,3);
+			THTensor_(narrow)(three_channel_slice, src, 0,0,2);
 			image_(Main_rgb2y)(three_channel_slice , dst);
 			THTensor_(free)(src);
 		}
@@ -44,7 +43,7 @@ THTensor* todepth(THTensor* src, int depth)
 	{
 		if (src->nDimension == 2)			// we have WxH, copy to 3
 		{
-			THTensor* dst = THTensor_(newWithSize3d)(3, src->size[0], src->size[1]);
+			THTensor *dst = THTensor_(newWithSize3d)(3, src->size[0], src->size[1]);
 			THTensor *slice;
 			THTensor_(select)(slice, src, 0, 0);
 			THTensor_(copy)(dst, slice);
@@ -56,7 +55,7 @@ THTensor* todepth(THTensor* src, int depth)
 		}
 		else if (src->size[0]==1)	//loaded image has 3 or 4 channels
 		{
-			THTensor dst = THTensor_(newWithSize3d)(3, src->size[1], src->size[2]);
+			THTensor *dst = THTensor_(newWithSize3d)(3, src->size[1], src->size[2]);
 			THTensor *slice;
 			THTensor_(select)(slice, src, 0, 0);
 			THTensor_(copy)(dst, slice);
@@ -72,7 +71,7 @@ THTensor* todepth(THTensor* src, int depth)
 		}
 		else if (src->size[0]==4)
 		{
-			THTensor_(narrow)(dst,src,1,1,3);
+			THTensor_(narrow)(dst,src,0,0,2);
 		}
 		else
 		{
@@ -83,15 +82,15 @@ THTensor* todepth(THTensor* src, int depth)
 	else
 	{
 		printf("Unsupported Depth\n");
-		exit();
+		exit(0);
 	}
 	return dst;
 }
 
-THTensor* image_(load)(cost char* filename, int depth)
+THTensor* image_(load)(const char* filename, int depth)
 {
 	//read the magic bytes to determine image extension (supported: jpeg, png, pgm, ppm)
-	THTensor *read;
+	THTensor *dst;
 	FILE* f = fopen(filename, "rb");
 	if (f==NULL) {
 		printf("Could not open file%s\n", filename);
@@ -103,21 +102,21 @@ THTensor* image_(load)(cost char* filename, int depth)
 	if (magicBytes[0] == 0xff && magicBytes[1] == 0xd8 && magicBytes[2] == 0xff) {
 		libjpeg_(Main_load)(filename, NULL, dst);
 		if (sizeof(real) != 1)	//we don't have a byte tensor, normalize to 0-1
-			THTensor_div(dst, dst, real(255));
-		dst=todepth(dst,depth);
+			THTensor_(div)(dst, dst, 255);
+		dst=image_(todepth)(dst,depth);
 	}
 	else if (magicBytes[0] == 0x89 && magicBytes[1] == 0x50 && magicBytes[2] == 0x4e && magicBytes[3] == 0x47) {
 		int depth_of_image=0;
 		libpng_(Main_load)(filename, NULL, dst, &depth_of_image);
 		if (sizeof(real) != 1)	//we don't have a byte tensor, normalize to 0-1
-			THTensor_div(dst, dst, (depth_of_image==16)? real(65535):real(255));
-		dst=todepth(dst,depth);
+			THTensor_(div)(dst, dst, (depth_of_image==16)? 65535:255);
+		dst=image_(todepth)(dst,depth);
 	}
 	else if (magicBytes[0] == '^' && magicBytes[1] == 'P' && magicBytes[2] == '[' && (magicBytes[3] == '2' || magicBytes[3] == '3') ) {
 		libppm_(Main_load)(filename, dst);
 		if (sizeof(real) != 1)	//we don't have a byte tensor, normalize to 0-1
-			THTensor_div(dst, dst, real(255));
-		dst=todepth(dst,depth);
+			THTensor_(div)(dst, dst, 255);
+		dst=image_(todepth)(dst,depth);
 	}
 	else {
 		printf("Invalid file format.\n");
@@ -158,7 +157,7 @@ THLongTensor* image_(getSize)(const char* filename)
 	return size;
 }
 
-void image_(save)(const char* filename, THTensor* src)
+void image_(save)(char* filename, THTensor* src)
 {
 	//infer desired file format from extension in the name
 	char *pt1, *ext;

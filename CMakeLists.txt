@@ -8,6 +8,12 @@ IF(NOT TH_LIBRARIES)
   SET(TH_LIBRARIES "TH")
 ENDIF(NOT TH_LIBRARIES)
 MESSAGE(STATUS "TH_LIBRARIES: ${TH_LIBRARIES}")
+if(JPEG_LIBRARIES)
+MESSAGE(STATUS "JPEG_LIBRARIES: ${JPEG_LIBRARIES}")
+ENDIF(JPEG_LIBRARIES)
+if(PNG_LIBRARIES)
+MESSAGE(STATUS "PNG_LIBRARIES: ${PNG_LIBRARIES}")
+ENDIF(PNG_LIBRARIES)
 INCLUDE_DIRECTORIES(${TH_INCLUDE_DIR})
 LINK_DIRECTORIES(${TH_LIBRARIES})
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}")
@@ -75,7 +81,7 @@ if (JPEG_FOUND)
     IF (HAVE_JPEG_MEM_DEST)
       SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_JPEG_MEM_DEST")
     ENDIF (HAVE_JPEG_MEM_DEST)
-
+    LINK_DIRECTORIES(${JPEG_LIBRARIES})
 else (JPEG_FOUND)
     message ("WARNING: Could not find JPEG libraries, JPEG wrapper will not be installed")
 endif (JPEG_FOUND)
@@ -83,26 +89,28 @@ endif (JPEG_FOUND)
 if (PNG_FOUND)
     SET(src ${src} lua_png.c)
     include_directories (${PNG_INCLUDE_DIR})
-
+    LINK_DIRECTORIES(${PNG_LIBRARIES})
 else (PNG_FOUND)
     message ("WARNING: Could not find PNG libraries, PNG wrapper will not be installed")
 endif (PNG_FOUND)
 
-SET(src ${src} image.c)
+SET(src ${src} image.c THImage.c)
 
 ADD_TORCH_LIBRARY(THImage SHARED "${src}")
-TARGET_LINK_LIBRARIES(THImage TH)
+TARGET_LINK_LIBRARIES(THImage ${TH_LIBRARIES} ${JPEG_LIBRARIES} ${PNG_LIBRARIES})
 
 INSTALL(FILES
   image.h
   jpeg.h
   ppm.h
   lua_png.h
-  DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
+  THImage.h
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/include/THImage")
 INSTALL(FILES
   generic/image.h
   generic/jpeg.h
   generic/ppm.h
   generic/lua_png.h
-  DESTINATION "${CMAKE_INSTALL_PREFIX}/include/generic")
+  generic/THImage.h
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/include/THImage/generic")
 INSTALL(TARGETS THImage DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")

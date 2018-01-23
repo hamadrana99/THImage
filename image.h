@@ -1,6 +1,6 @@
 #ifndef TH_IMAGE_INC
 #define TH_IMAGE_INC
-#include <TH.h>
+#include "TH.h"
 
 #define torch_(NAME) TH_CONCAT_3(torch_, Real, NAME)
 #define torch_Tensor TH_CONCAT_STRING_3(torch., Real, Tensor)

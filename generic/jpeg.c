@@ -1,7 +1,6 @@
 #ifndef TH_GENERIC_FILE
 #define TH_GENERIC_FILE "generic/jpeg.c"
 #else
-#include "jpeg.h"
 /*
  * Here's the routine that will replace the standard error_exit method:
  */
@@ -25,7 +24,7 @@ METHODDEF(void) libjpeg_(Main_output_message) (j_common_ptr cinfo)
 
   (*cinfo->err->format_message) (cinfo, myerr->msg);
 }
-static int libjpeg_(Main_size)(const char *filename, int *channels, int *height, int *width)
+int libjpeg_(Main_size)(const char *filename, int *channels, int *height, int *width)
 {
   /* This struct contains the JPEG decompression parameters and pointers to
    * working space (which is allocated as needed by the JPEG library).
@@ -122,7 +121,7 @@ static int libjpeg_(Main_size)(const char *filename, int *channels, int *height,
   return 3;
 }
 
-static int libjpeg_(Main_load)(const char *filename, THByteTensor *src, THTensor* tensor)
+int libjpeg_(Main_load)(const char *filename, THByteTensor *src, THTensor* tensor)
 {
   
 #if !defined(HAVE_JPEG_MEM_SRC)
