@@ -1,60 +1,7 @@
 #ifndef TH_GENERIC_FILE
 #define TH_GENERIC_FILE "generic/jpeg.c"
 #else
-
-/******************** JPEG DECOMPRESSION SAMPLE INTERFACE *******************/
-
-/* This half of the example shows how to read data from the JPEG decompressor.
- * It's a bit more refined than the above, in that we show:
- *   (a) how to modify the JPEG library's standard error-reporting behavior;
- *   (b) how to allocate workspace using the library's memory manager.
- *
- * Just to make this example a little different from the first one, we'll
- * assume that we do not intend to put the whole image into an in-memory
- * buffer, but to send it line-by-line someplace else.  We need a one-
- * scanline-high JSAMPLE array as a work buffer, and we will let the JPEG
- * memory manager allocate it for us.  This approach is actually quite useful
- * because we don't need to remember to deallocate the buffer separately: it
- * will go away automatically when the JPEG object is cleaned up.
- */
-
-
-/*
- * ERROR HANDLING:
- *
- * The JPEG library's standard error handler (jerror.c) is divided into
- * several "methods" which you can override individually.  This lets you
- * adjust the behavior without duplicating a lot of code, which you might
- * have to update with each future release.
- *
- * Our example here shows how to override the "error_exit" method so that
- * control is returned to the library's caller when a fatal error occurs,
- * rather than calling return -1 as the standard error_exit method does.
- *
- * We use C's setjmp/longjmp facility to return control.  This means that the
- * routine which calls the JPEG library must first execute a setjmp() call to
- * establish the return point.  We want the replacement error_exit to do a
- * longjmp().  But we need to make the setjmp buffer accessible to the
- * error_exit routine.  To do this, we make a private extension of the
- * standard JPEG error handler object.  (If we were using C++, we'd say we
- * were making a subclass of the regular error handler.)
- *
- * Here's the extended error handler struct:
- */
-
-#ifndef _LIBJPEG_ERROR_STRUCTS_
-#define _LIBJPEG_ERROR_STRUCTS_
-struct my_error_mgr {
-  struct jpeg_error_mgr pub;	/* "public" fields */
-
-  jmp_buf setjmp_buffer;	/* for return to caller */
-
-  char msg[JMSG_LENGTH_MAX]; /* last error message */
-};
-
-typedef struct my_error_mgr * my_error_ptr;
-#endif
-
+#include "jpeg.h"
 /*
  * Here's the routine that will replace the standard error_exit method:
  */
@@ -78,7 +25,6 @@ METHODDEF(void) libjpeg_(Main_output_message) (j_common_ptr cinfo)
 
   (*cinfo->err->format_message) (cinfo, myerr->msg);
 }
-
 static int libjpeg_(Main_size)(const char *filename, int *channels, int *height, int *width)
 {
   /* This struct contains the JPEG decompression parameters and pointers to

@@ -1,7 +1,7 @@
 #ifndef TH_GENERIC_FILE
 #define TH_GENERIC_FILE "generic/ppm.c"
 #else
-
+#include "ppm.h"
 static int libppm_(Main_size)(const char *filename, int *channels, int *height, int *width)
 {
   FILE* fp = fopen ( filename, "r" );

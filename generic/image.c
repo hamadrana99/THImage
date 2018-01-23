@@ -1,27 +1,7 @@
 #ifndef TH_GENERIC_FILE
 #define TH_GENERIC_FILE "generic/image.c"
 #else
-
-#undef MAX
-#define MAX(a,b) ( ((a)>(b)) ? (a) : (b) )
-
-#undef MIN
-#define MIN(a,b) ( ((a)<(b)) ? (a) : (b) )
-
-#undef TAPI
-#define TAPI __declspec(dllimport)
-
-#ifndef M_PI
-#define M_PI    3.14159265358979323846
-#endif
-
-#undef temp_t
-#if defined(TH_REAL_IS_FLOAT) || defined(TH_REAL_IS_DOUBLE)
-#define temp_t real
-#else
-#define temp_t float
-#endif
-
+#include "image.h"
 static inline real image_(FromIntermediate)(temp_t x) {
 #ifdef TH_REAL_IS_BYTE
   x += 0.5;
@@ -30,36 +10,6 @@ static inline real image_(FromIntermediate)(temp_t x) {
 #endif
   return x;
 }
-
-/*
-  {"scaleSimple", image_(Main_scaleSimple)},
-  {"scaleBilinear", image_(Main_scaleBilinear)},
-  {"scaleBicubic", image_(Main_scaleBicubic)},
-  {"rotate", image_(Main_rotate)},
-  {"rotateBilinear", image_(Main_rotateBilinear)},
-  {"polar", image_(Main_polar)},
-  {"polarBilinear", image_(Main_polarBilinear)},
-  {"logPolar", image_(Main_logPolar)},
-  {"logPolarBilinear", image_(Main_logPolarBilinear)},
-  {"translate", image_(Main_translate)},
-  {"cropNoScale", image_(Main_cropNoScale)},
-  {"warp", image_(Main_warp)},
-  {"saturate", image_(Main_saturate)},
-  {"rgb2y",   image_(Main_rgb2y)},
-  {"rgb2hsv", image_(Main_rgb2hsv)},
-  {"rgb2hsl", image_(Main_rgb2hsl)},
-  {"hsv2rgb", image_(Main_hsv2rgb)},
-  {"hsl2rgb", image_(Main_hsl2rgb)},
-  {"rgb2lab", image_(Main_rgb2lab)},
-  {"lab2rgb", image_(Main_lab2rgb)},
-  {"gaussian", image_(Main_gaussian)},
-  {"vflip", image_(Main_vflip)},
-  {"hflip", image_(Main_hflip)},
-  {"flip", image_(Main_flip)},
-  {"colorize", image_(Main_colorize)},
-  {"text", image_(Main_drawtext)},
-  {"drawRect", image_(Main_drawRect)},
-*/
 
 static void image_(Main_op_validate)(THTensor *Tsrc, THTensor *Tdst){
 

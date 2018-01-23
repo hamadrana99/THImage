@@ -81,7 +81,7 @@ else (JPEG_FOUND)
 endif (JPEG_FOUND)
 
 if (PNG_FOUND)
-    SET(src ${src} png.c)
+    SET(src ${src} lua_png.c)
     include_directories (${PNG_INCLUDE_DIR})
 
 else (PNG_FOUND)
@@ -93,4 +93,16 @@ SET(src ${src} image.c)
 ADD_TORCH_LIBRARY(THImage SHARED "${src}")
 TARGET_LINK_LIBRARIES(THImage TH)
 
+INSTALL(FILES
+  image.h
+  jpeg.h
+  ppm.h
+  lua_png.h
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
+INSTALL(FILES
+  generic/image.h
+  generic/jpeg.h
+  generic/ppm.h
+  generic/lua_png.h
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/include/generic")
 INSTALL(TARGETS THImage DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
