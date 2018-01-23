@@ -2,12 +2,12 @@
 #define TH_GENERIC_FILE "generic/ppm.c"
 #else
 
-static int libppm_(Main_size)(lua_State *L)
+static int libppm_(Main_size)(const char *filename, int *channels, int *height, int *width)
 {
-  const char *filename = luaL_checkstring(L, 1);
   FILE* fp = fopen ( filename, "r" );
   if ( !fp ) {
-    luaL_error(L, "cannot open file <%s> for reading", filename);
+    printf("cannot open file <%s> for reading\n", filename);
+	return -1;
   }
 
   long W,H,C;
@@ -18,7 +18,8 @@ static int libppm_(Main_size)(lua_State *L)
   if ( p != 'P' ) {
     W = H = 0;
     fclose(fp);
-    luaL_error(L, "corrupted file");
+    printf("corrupted file\n");
+	return -1;
   }
 
   n = (char)getc(fp);
@@ -34,24 +35,26 @@ static int libppm_(Main_size)(lua_State *L)
   } else {
     W=H=C=0;
     fclose ( fp );
-    luaL_error(L, "unsupported magic number: P%c", n);
+    printf("unsupported magic number: P%c\n", n);
+    return -1;
   }
 
   fclose(fp);
 
-  lua_pushnumber(L, C);
-  lua_pushnumber(L, H);
-  lua_pushnumber(L, W);
+  (*channels) = C;
+  (*height)  = H;
+  (*width) = W;
 
   return 3;
 }
 
-static int libppm_(Main_load)(lua_State *L)
+static int libppm_(Main_load)(const char *filename,
+								THTensor *tensor)			//destination
 {
-  const char *filename = luaL_checkstring(L, 1);
   FILE* fp = fopen ( filename, "r" );
   if ( !fp ) {
-    luaL_error(L, "cannot open file <%s> for reading", filename);
+    printf("cannot open file <%s> for reading\n", filename);
+    return -1;
   }
 
   long W,H,C;
@@ -63,7 +66,8 @@ static int libppm_(Main_load)(lua_State *L)
   if ( p != 'P' ) {
     W = H = 0;
     fclose(fp);
-    luaL_error(L, "corrupted file");
+    printf("corrupted file\n");
+    return -1;
   }
 
   n = (char)getc(fp);
@@ -119,16 +123,18 @@ static int libppm_(Main_load)(lua_State *L)
   } else {
     W=H=C=0;
     fclose ( fp );
-    luaL_error(L, "unsupported magic number: P%c", n);
+    printf("unsupported magic number: P%c\n", n);
+    return -1;
   }
 
   if (!ok) {
     fclose ( fp );
-    luaL_error(L, "corrupted file or read error");
+    printf("corrupted file or read error\n");
+	return -1;
   }
 
   // export tensor
-  THTensor *tensor = THTensor_(newWithSize3d)(C,H,W);
+  tensor = THTensor_(newWithSize3d)(C,H,W);
   real *data = THTensor_(data)(tensor);
   long i,k,j=0;
   int val;
@@ -149,14 +155,13 @@ static int libppm_(Main_load)(lua_State *L)
   fclose(fp);
 
   // return loaded image
-  luaT_pushudata(L, tensor, torch_Tensor);
   return 1;
 }
 
-int libppm_(Main_save)(lua_State *L) {
+int libppm_(Main_save)(const char *filename,
+						THTensor *tensor) 		//source
+{
   // get args
-  const char *filename = luaL_checkstring(L, 1);
-  THTensor *tensor = luaT_checkudata(L, 2, torch_Tensor);
   THTensor *tensorc = THTensor_(newContiguous)(tensor);
   real *data = THTensor_(data)(tensorc);
 
@@ -172,7 +177,8 @@ int libppm_(Main_save)(lua_State *L) {
     W = tensorc->size[1];
   } else {
     C=W=H=0;
-    luaL_error(L, "can only export tensor with geometry: HxW or 1xHxW or 3xHxW");
+    printf("can only export tensor with geometry: HxW or 1xHxW or 3xHxW\n");
+    return -1;
   }
   N = C*H*W;
 
@@ -188,7 +194,8 @@ int libppm_(Main_save)(lua_State *L) {
   // open file
   FILE* fp = fopen(filename, "w");
   if ( !fp ) {
-    luaL_error(L, "cannot open file <%s> for writing", filename);
+    printf("cannot open file <%s> for writing\n", filename);
+    return -1;
   }
 
   // write 3 or 1 channel(s) header
@@ -207,21 +214,6 @@ int libppm_(Main_save)(lua_State *L) {
   fclose (fp);
 
   // return result
-  return 1;
-}
-
-static const luaL_Reg libppm_(Main__)[] =
-{
-  {"load", libppm_(Main_load)},
-  {"save", libppm_(Main_save)},
-  {"size", libppm_(Main_size)},
-  {NULL, NULL}
-};
-
-DLL_EXPORT int libppm_(Main_init)(lua_State *L)
-{
-  luaT_pushmetatable(L, torch_Tensor);
-  luaT_registeratname(L, libppm_(Main__), "libppm");
   return 1;
 }
 

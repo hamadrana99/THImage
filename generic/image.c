@@ -22,7 +22,6 @@
 #define temp_t float
 #endif
 
-
 static inline real image_(FromIntermediate)(temp_t x) {
 #ifdef TH_REAL_IS_BYTE
   x += 0.5;
@@ -32,27 +31,66 @@ static inline real image_(FromIntermediate)(temp_t x) {
   return x;
 }
 
+/*
+  {"scaleSimple", image_(Main_scaleSimple)},
+  {"scaleBilinear", image_(Main_scaleBilinear)},
+  {"scaleBicubic", image_(Main_scaleBicubic)},
+  {"rotate", image_(Main_rotate)},
+  {"rotateBilinear", image_(Main_rotateBilinear)},
+  {"polar", image_(Main_polar)},
+  {"polarBilinear", image_(Main_polarBilinear)},
+  {"logPolar", image_(Main_logPolar)},
+  {"logPolarBilinear", image_(Main_logPolarBilinear)},
+  {"translate", image_(Main_translate)},
+  {"cropNoScale", image_(Main_cropNoScale)},
+  {"warp", image_(Main_warp)},
+  {"saturate", image_(Main_saturate)},
+  {"rgb2y",   image_(Main_rgb2y)},
+  {"rgb2hsv", image_(Main_rgb2hsv)},
+  {"rgb2hsl", image_(Main_rgb2hsl)},
+  {"hsv2rgb", image_(Main_hsv2rgb)},
+  {"hsl2rgb", image_(Main_hsl2rgb)},
+  {"rgb2lab", image_(Main_rgb2lab)},
+  {"lab2rgb", image_(Main_lab2rgb)},
+  {"gaussian", image_(Main_gaussian)},
+  {"vflip", image_(Main_vflip)},
+  {"hflip", image_(Main_hflip)},
+  {"flip", image_(Main_flip)},
+  {"colorize", image_(Main_colorize)},
+  {"text", image_(Main_drawtext)},
+  {"drawRect", image_(Main_drawRect)},
+*/
 
-static void image_(Main_op_validate)( lua_State *L,  THTensor *Tsrc, THTensor *Tdst){
+static void image_(Main_op_validate)(THTensor *Tsrc, THTensor *Tdst){
 
   long src_depth = 1;
   long dst_depth = 1;
 
-  luaL_argcheck(L, Tsrc->nDimension==2 || Tsrc->nDimension==3, 1, "rotate: src not 2 or 3 dimensional");
-  luaL_argcheck(L, Tdst->nDimension==2 || Tdst->nDimension==3, 2, "rotate: dst not 2 or 3 dimensional");
+  if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+		printf("rotate: src not 2 or 3 dimensional\n");
+		exit(0);
+	}
+  if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	exit(0);
+  }
 
   if(Tdst->nDimension == 3) dst_depth =  Tdst->size[0];
   if(Tsrc->nDimension == 3) src_depth =  Tsrc->size[0];
 
   if( (Tdst->nDimension==3 && ( src_depth!=dst_depth)) ||
-      (Tdst->nDimension!=Tsrc->nDimension) )
-    luaL_error(L, "image.scale: src and dst depths do not match");
+      (Tdst->nDimension!=Tsrc->nDimension) )  {
+    printf("image.scale: src and dst depths do not match");
+    exit(0);
+  }
 
-  if( Tdst->nDimension==3 && ( src_depth!=dst_depth) )
-    luaL_error(L, "image.scale: src and dst depths do not match");
+  if( Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
+    printf("image.scale: src and dst depths do not match");
+    exit(0);
+  }
 }
 
-static long image_(Main_op_stride)( THTensor *T,int i){
+static long image_(Main_op_stride)( THTensor *T, int i){
   if (T->nDimension == 2) {
     if (i == 0) return 0;
     else return T->stride[i-1];
@@ -60,7 +98,7 @@ static long image_(Main_op_stride)( THTensor *T,int i){
   return T->stride[i];
 }
 
-static long image_(Main_op_depth)( THTensor *T){
+static long image_(Main_op_depth)(THTensor *T){
   if(T->nDimension == 3) return T->size[0]; /* rgb or rgba */
   return 1; /* greyscale */
 }
@@ -210,17 +248,15 @@ static void image_(Main_scaleCubic_rowcol)(THTensor *Tsrc,
   }
 }
 
-static int image_(Main_scaleBilinear)(lua_State *L) {
+static int image_(Main_scaleBilinear)(THTensor *Tsrc, THTensor *Tdst) {
 
-  THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
   THTensor *Ttmp;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height;
   long src_stride0, src_stride1, src_stride2, src_width, src_height;
   long tmp_stride0, tmp_stride1, tmp_stride2, tmp_width, tmp_height;
   long i, j, k;
 
-  image_(Main_op_validate)(L, Tsrc,Tdst);
+  image_(Main_op_validate)(Tsrc,Tdst);
 
   int ndims;
   if (Tdst->nDimension == 3) ndims = 3;
@@ -274,17 +310,15 @@ static int image_(Main_scaleBilinear)(lua_State *L) {
   return 0;
 }
 
-static int image_(Main_scaleBicubic)(lua_State *L) {
+static int image_(Main_scaleBicubic)(THTensor *Tsrc, THTensor *Tdst) {
 
-  THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
   THTensor *Ttmp;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height;
   long src_stride0, src_stride1, src_stride2, src_width, src_height;
   long tmp_stride0, tmp_stride1, tmp_stride2, tmp_width, tmp_height;
   long i, j, k;
 
-  image_(Main_op_validate)(L, Tsrc,Tdst);
+  image_(Main_op_validate)(Tsrc,Tdst);
 
   int ndims;
   if (Tdst->nDimension == 3) ndims = 3;
@@ -337,18 +371,22 @@ static int image_(Main_scaleBicubic)(lua_State *L) {
   return 0;
 }
 
-static int image_(Main_scaleSimple)(lua_State *L)
+static int image_(Main_scaleSimple)(THTensor *Tsrc, THTensor *Tdst)
 {
-  THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
   real *src, *dst;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
   long src_stride0, src_stride1, src_stride2, src_width, src_height, src_depth;
   long i, j, k;
   float scx, scy;
 
-  luaL_argcheck(L, Tsrc->nDimension==2 || Tsrc->nDimension==3, 1, "image.scale: src not 2 or 3 dimensional");
-  luaL_argcheck(L, Tdst->nDimension==2 || Tdst->nDimension==3, 2, "image.scale: dst not 2 or 3 dimensional");
+  if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+		printf("rotate: src not 2 or 3 dimensional\n");
+		exit(0);
+	}
+  if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	exit(0);
+  }
 
   src= THTensor_(data)(Tsrc);
   dst= THTensor_(data)(Tdst);
@@ -378,12 +416,14 @@ static int image_(Main_scaleSimple)(lua_State *L)
   if( (Tdst->nDimension==3 && ( src_depth!=dst_depth)) ||
       (Tdst->nDimension!=Tsrc->nDimension) ) {
     printf("image.scale:%d,%d,%ld,%ld\n",Tsrc->nDimension,Tdst->nDimension,src_depth,dst_depth);
-    luaL_error(L, "image.scale: src and dst depths do not match");
+    printf("image.scale: src and dst depths do not match\n");
+    exit(0);
   }
 
-  if( Tdst->nDimension==3 && ( src_depth!=dst_depth) )
-    luaL_error(L, "image.scale: src and dst depths do not match");
-
+  if( Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
+    printf("image.scale: src and dst depths do not match\n");
+    exit(0);
+	}
   /* printf("%d,%d -> %d,%d\n",src_width,src_height,dst_width,dst_height); */
   scx=((float)src_width)/((float)dst_width);
   scy=((float)src_height)/((float)dst_height);
@@ -415,11 +455,8 @@ static int image_(Main_scaleSimple)(lua_State *L)
   return 0;
 }
 
-static int image_(Main_rotate)(lua_State *L)
+static int image_(Main_rotate)(THTensor *Tsrc, THTensor *Tdst, float theta)
 {
-  THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
-  float theta = luaL_checknumber(L, 3);
   float cos_theta, sin_theta;
   real *src, *dst;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
@@ -429,14 +466,20 @@ static int image_(Main_rotate)(lua_State *L)
   float id,jd;
   long ii,jj;
 
-  luaL_argcheck(L, Tsrc->nDimension==2 || Tsrc->nDimension==3, 1, "rotate: src not 2 or 3 dimensional");
-  luaL_argcheck(L, Tdst->nDimension==2 || Tdst->nDimension==3, 2, "rotate: dst not 2 or 3 dimensional");
-
+  if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+		printf("rotate: src not 2 or 3 dimensional\n");
+		exit(0);
+	}
+  if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	exit(0);
+  }
   src= THTensor_(data)(Tsrc);
   dst= THTensor_(data)(Tdst);
 
   if (dst == src) {
-    luaL_error(L, "image.rotate: in-place rotate not supported");
+    printf("image.rotate: in-place rotate not supported\n");
+    exit(0);
   }
 
   dst_stride0 = 0;
@@ -461,11 +504,15 @@ static int image_(Main_rotate)(lua_State *L)
     src_depth = Tsrc->size[0];
   }
 
-  if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) )
-    luaL_error(L, "image.rotate: src and dst depths do not match");
+  if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) )	{
+    printf("image.rotate: src and dst depths do not match\n");
+    exit(0);
+  }
 
-  if( (Tsrc->nDimension!=Tdst->nDimension) )
-    luaL_error(L, "image.rotate: src and dst depths do not match");
+  if( (Tsrc->nDimension!=Tdst->nDimension) ) {
+    printf("image.rotate: src and dst depths do not match\n");
+    exit(0);
+  }
 
   xc = (src_width-1)/2.0;
   yc = (src_height-1)/2.0;
@@ -508,12 +555,9 @@ static int image_(Main_rotate)(lua_State *L)
   }
   return 0;
 }
-static int image_(Main_rotateBilinear)(lua_State *L)
+static int image_(Main_rotateBilinear)(THTensor *Tsrc, THTensor *Tdst, float theta)
 {
-  THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
-  float theta = luaL_checknumber(L, 3);
-  real *src, *dst;
+ real *src, *dst;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
   long src_stride0, src_stride1, src_stride2, src_width, src_height, src_depth;
   long i, j, k;
@@ -521,14 +565,20 @@ static int image_(Main_rotateBilinear)(lua_State *L)
   float id,jd;
   long ii_0, ii_1, jj_0, jj_1;
 
-  luaL_argcheck(L, Tsrc->nDimension==2 || Tsrc->nDimension==3, 1, "rotate: src not 2 or 3 dimensional");
-  luaL_argcheck(L, Tdst->nDimension==2 || Tdst->nDimension==3, 2, "rotate: dst not 2 or 3 dimensional");
-
+  if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+		printf("rotate: src not 2 or 3 dimensional\n");
+		exit(0);
+	}
+  if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	exit(0);
+  }
   src= THTensor_(data)(Tsrc);
   dst= THTensor_(data)(Tdst);
 
   if (dst == src) {
-    luaL_error(L, "image.rotate: in-place rotate not supported");
+    printf("image.rotate: in-place rotate not supported\n");
+    exit(0);
   }
 
   dst_stride0 = 0;
@@ -553,11 +603,15 @@ static int image_(Main_rotateBilinear)(lua_State *L)
     src_depth = Tsrc->size[0];
   }
 
-  if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) )
-    luaL_error(L, "image.rotate: src and dst depths do not match");
+  if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
+    printf("image.rotate: src and dst depths do not match\n");
+    exit(0);
+  }
 
-  if( (Tsrc->nDimension!=Tdst->nDimension) )
-    luaL_error(L, "image.rotate: src and dst depths do not match");
+  if( (Tsrc->nDimension!=Tdst->nDimension) ) {
+    printf("image.rotate: src and dst depths do not match\n");
+    exit(0);
+  }  
 
   xc = (src_width-1)/2.0;
   yc = (src_height-1)/2.0;
@@ -612,11 +666,8 @@ static int image_(Main_rotateBilinear)(lua_State *L)
   return 0;
 }
 
-static int image_(Main_polar)(lua_State *L)
+static int image_(Main_polar)(THTensor *Tsrc, THTensor *Tdst, float doFull)
 {
-    THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-    THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
-    float doFull = luaL_checknumber(L, 3);
     real *src, *dst;
     long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
     long src_stride0, src_stride1, src_stride2, src_width, src_height, src_depth;
@@ -624,9 +675,14 @@ static int image_(Main_polar)(lua_State *L)
     float id, jd, a, r, m, midY, midX;
     long ii,jj;
 
-    luaL_argcheck(L, Tsrc->nDimension==2 || Tsrc->nDimension==3, 1, "polar: src not 2 or 3 dimensional");
-    luaL_argcheck(L, Tdst->nDimension==2 || Tdst->nDimension==3, 2, "polar: dst not 2 or 3 dimensional");
-
+  if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+		printf("rotate: src not 2 or 3 dimensional\n");
+		exit(0);
+	}
+  if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	exit(0);
+  }
     src= THTensor_(data)(Tsrc);
     dst= THTensor_(data)(Tdst);
 
@@ -653,10 +709,14 @@ static int image_(Main_polar)(lua_State *L)
     }
 
     if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
-        luaL_error(L, "image.polar: src and dst depths do not match"); }
+        printf("image.polar: src and dst depths do not match\n"); 
+        exit(0);
+    }
 
     if( (Tsrc->nDimension!=Tdst->nDimension) ) {
-        luaL_error(L, "image.polar: src and dst depths do not match"); }
+        printf("image.polar: src and dst depths do not match\n"); 
+        exit(0);
+    }
 
     // compute maximum distance
     midY = (float) src_height / 2.0;
@@ -705,11 +765,8 @@ static int image_(Main_polar)(lua_State *L)
     }
     return 0;
 }
-static int image_(Main_polarBilinear)(lua_State *L)
+static int image_(Main_polarBilinear)(THTensor *Tsrc, THTensor *Tdst, float doFull)
 {
-    THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-    THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
-    float doFull = luaL_checknumber(L, 3);
     real *src, *dst;
     long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
     long src_stride0, src_stride1, src_stride2, src_width, src_height, src_depth;
@@ -717,8 +774,14 @@ static int image_(Main_polarBilinear)(lua_State *L)
     float id, jd, a, r, m, midY, midX;
     long ii_0, ii_1, jj_0, jj_1;
 
-    luaL_argcheck(L, Tsrc->nDimension==2 || Tsrc->nDimension==3, 1, "polar: src not 2 or 3 dimensional");
-    luaL_argcheck(L, Tdst->nDimension==2 || Tdst->nDimension==3, 2, "polar: dst not 2 or 3 dimensional");
+    if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+        printf("rotate: src not 2 or 3 dimensional\n");
+        exit(0);
+    }
+    if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+        printf("rotate: dst not 2 or 3 dimensional\n");
+        exit(0);
+    }
 
     src= THTensor_(data)(Tsrc);
     dst= THTensor_(data)(Tdst);
@@ -746,10 +809,14 @@ static int image_(Main_polarBilinear)(lua_State *L)
     }
 
     if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
-        luaL_error(L, "image.polar: src and dst depths do not match"); }
+        printf("image.polar: src and dst depths do not match\n"); 
+        exit(0);
+    }
 
     if( (Tsrc->nDimension!=Tdst->nDimension) ) {
-        luaL_error(L, "image.polar: src and dst depths do not match"); }
+        printf("image.polar: src and dst depths do not match\n"); 
+        exit(0);
+    }
 
     // compute maximum distance
     midY = (float) src_height / 2.0;
@@ -833,11 +900,8 @@ static int image_(Main_polarBilinear)(lua_State *L)
     return 0;
 }
 
-static int image_(Main_logPolar)(lua_State *L)
+static int image_(Main_logPolar)(THTensor *Tsrc, THTensor *Tdst, float doFull)
 {
-    THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-    THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
-    float doFull = luaL_checknumber(L, 3);
     real *src, *dst;
     long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
     long src_stride0, src_stride1, src_stride2, src_width, src_height, src_depth;
@@ -845,9 +909,15 @@ static int image_(Main_logPolar)(lua_State *L)
     float id, jd, a, r, m, midY, midX, fw;
     long ii,jj;
 
-    luaL_argcheck(L, Tsrc->nDimension==2 || Tsrc->nDimension==3, 1, "polar: src not 2 or 3 dimensional");
-    luaL_argcheck(L, Tdst->nDimension==2 || Tdst->nDimension==3, 2, "polar: dst not 2 or 3 dimensional");
-
+    if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+	    printf("rotate: src not 2 or 3 dimensional\n");
+	    exit(0);
+    }
+    if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+        printf("rotate: dst not 2 or 3 dimensional\n");
+        exit(0);
+    } 
+		
     src= THTensor_(data)(Tsrc);
     dst= THTensor_(data)(Tdst);
 
@@ -874,10 +944,14 @@ static int image_(Main_logPolar)(lua_State *L)
     }
 
     if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
-        luaL_error(L, "image.polar: src and dst depths do not match"); }
+        printf("image.polar: src and dst depths do not match\n"); 
+        exit(0);
+    }
 
     if( (Tsrc->nDimension!=Tdst->nDimension) ) {
-        luaL_error(L, "image.polar: src and dst depths do not match"); }
+        printf("image.polar: src and dst depths do not match\n"); 
+        exit(0);
+    }
 
     // compute maximum distance
     midY = (float) src_height / 2.0;
@@ -928,11 +1002,8 @@ static int image_(Main_logPolar)(lua_State *L)
     }
     return 0;
 }
-static int image_(Main_logPolarBilinear)(lua_State *L)
+static int image_(Main_logPolarBilinear)(THTensor *Tsrc, THTensor *Tdst, float doFull)
 {
-    THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-    THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
-    float doFull = luaL_checknumber(L, 3);
     real *src, *dst;
     long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
     long src_stride0, src_stride1, src_stride2, src_width, src_height, src_depth;
@@ -940,9 +1011,14 @@ static int image_(Main_logPolarBilinear)(lua_State *L)
     float id, jd, a, r, m, midY, midX, fw;
     long ii_0, ii_1, jj_0, jj_1;
 
-    luaL_argcheck(L, Tsrc->nDimension==2 || Tsrc->nDimension==3, 1, "polar: src not 2 or 3 dimensional");
-    luaL_argcheck(L, Tdst->nDimension==2 || Tdst->nDimension==3, 2, "polar: dst not 2 or 3 dimensional");
-
+    if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+        printf("rotate: src not 2 or 3 dimensional\n");
+        exit(0);
+    }
+    if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+        printf("rotate: dst not 2 or 3 dimensional\n");
+        exit(0);
+    }
     src= THTensor_(data)(Tsrc);
     dst= THTensor_(data)(Tdst);
 
@@ -969,10 +1045,14 @@ static int image_(Main_logPolarBilinear)(lua_State *L)
     }
 
     if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
-        luaL_error(L, "image.polar: src and dst depths do not match"); }
+        printf("image.polar: src and dst depths do not match\n"); 
+        exit(0);
+    }
 
     if( (Tsrc->nDimension!=Tdst->nDimension) ) {
-        luaL_error(L, "image.polar: src and dst depths do not match"); }
+        printf("image.polar: src and dst depths do not match\n"); 
+        exit(0);
+    }
 
     // compute maximum distance
     midY = (float) src_height / 2.0;
@@ -1059,20 +1139,21 @@ static int image_(Main_logPolarBilinear)(lua_State *L)
 }
 
 
-static int image_(Main_cropNoScale)(lua_State *L)
+static int image_(Main_cropNoScale)(THTensor *Tsrc, THTensor *Tdst, long startx, long starty)
 {
-  THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
-  long startx = luaL_checklong(L, 3);
-  long starty = luaL_checklong(L, 4);
   real *src, *dst;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
   long src_stride0, src_stride1, src_stride2, src_width, src_height, src_depth;
   long i, j, k;
 
-  luaL_argcheck(L, Tsrc->nDimension==2 || Tsrc->nDimension==3, 1, "rotate: src not 2 or 3 dimensional");
-  luaL_argcheck(L, Tdst->nDimension==2 || Tdst->nDimension==3, 2, "rotate: dst not 2 or 3 dimensional");
-
+  if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+		printf("rotate: src not 2 or 3 dimensional\n");
+		exit(0);
+	}
+  if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	exit(0);
+  }
   src= THTensor_(data)(Tsrc);
   dst= THTensor_(data)(Tdst);
 
@@ -1098,11 +1179,15 @@ static int image_(Main_cropNoScale)(lua_State *L)
     src_depth = Tsrc->size[0];
   }
 
-  if( startx<0 || starty<0 || (startx+dst_width>src_width) || (starty+dst_height>src_height))
-    luaL_error(L, "image.crop: crop goes outside bounds of src");
+  if( startx<0 || starty<0 || (startx+dst_width>src_width) || (starty+dst_height>src_height)) {
+  	printf("image.crop: crop goes outside bounds of src\n");
+  	exit(0);
+  }
 
-  if( Tdst->nDimension==3 && ( src_depth!=dst_depth) )
-    luaL_error(L, "image.crop: src and dst depths do not match");
+  if( Tdst->nDimension==3 && ( src_depth!=dst_depth) )	{
+    printf("image.crop: src and dst depths do not match\n");
+    exit(0);
+  }
 
   for(j = 0; j < dst_height; j++) {
     for(i = 0; i < dst_width; i++) {
@@ -1129,20 +1214,21 @@ static int image_(Main_cropNoScale)(lua_State *L)
   return 0;
 }
 
-static int image_(Main_translate)(lua_State *L)
+static int image_(Main_translate)(THTensor *Tsrc, THTensor *Tdst, long shiftx, long shifty)
 {
-  THTensor *Tsrc = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *Tdst = luaT_checkudata(L, 2, torch_Tensor);
-  long shiftx = luaL_checklong(L, 3);
-  long shifty = luaL_checklong(L, 4);
   real *src, *dst;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
   long src_stride0, src_stride1, src_stride2, src_width, src_height, src_depth;
   long i, j, k;
 
-  luaL_argcheck(L, Tsrc->nDimension==2 || Tsrc->nDimension==3, 1, "rotate: src not 2 or 3 dimensional");
-  luaL_argcheck(L, Tdst->nDimension==2 || Tdst->nDimension==3, 2, "rotate: dst not 2 or 3 dimensional");
-
+  if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+		printf("rotate: src not 2 or 3 dimensional\n");
+		exit(0);
+	}
+  if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	exit(0);
+  } 
   src= THTensor_(data)(Tsrc);
   dst= THTensor_(data)(Tdst);
 
@@ -1168,8 +1254,10 @@ static int image_(Main_translate)(lua_State *L)
     src_depth = Tsrc->size[0];
   }
 
-  if( Tdst->nDimension==3 && ( src_depth!=dst_depth) )
-    luaL_error(L, "image.translate: src and dst depths do not match");
+  if( Tdst->nDimension==3 && ( src_depth!=dst_depth) )  {
+    printf("image.translate: src and dst depths do not match\n");
+    exit(0);
+  }
 
   for(j = 0; j < src_height; j++) {
     for(i = 0; i < src_width; i++) {
@@ -1187,11 +1275,10 @@ static int image_(Main_translate)(lua_State *L)
   return 0;
 }
 
-static int image_(Main_saturate)(lua_State *L) {
+static int image_(Main_saturate)(THTensor *input) {
 #ifdef TH_REAL_IS_BYTE
   // Noop since necessarily constrained to [0, 255].
 #else
-  THTensor *input = luaT_checkudata(L, 1, torch_Tensor);
   THTensor *output = input;
 
   TH_TENSOR_APPLY2(real, output, real, input,                       \
@@ -1206,10 +1293,7 @@ static int image_(Main_saturate)(lua_State *L) {
  * Assumes r, g, and b are contained in the set [0, 1] and
  * returns h, s, and l in the set [0, 1].
  */
-int image_(Main_rgb2hsl)(lua_State *L) {
-  THTensor *rgb = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *hsl = luaT_checkudata(L, 2, torch_Tensor);
-
+int image_(Main_rgb2hsl)(THTensor *rgb, THTensor *hsl) {
   int y,x;
   temp_t r, g, b, h, s, l;
   for (y=0; y<rgb->size[1]; y++) {
@@ -1278,10 +1362,8 @@ static inline temp_t image_(hue2rgb)(temp_t p, temp_t q, temp_t t) {
  * Assumes h, s, and l are contained in the set [0, 1] and
  * returns r, g, and b in the set [0, 1].
  */
-int image_(Main_hsl2rgb)(lua_State *L) {
-  THTensor *hsl = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *rgb = luaT_checkudata(L, 2, torch_Tensor);
-
+int image_(Main_hsl2rgb)(THTensor *hsl, THTensor *rgb) {
+  
   int y,x;
   temp_t r, g, b, h, s, l;
   for (y=0; y<hsl->size[1]; y++) {
@@ -1332,9 +1414,7 @@ int image_(Main_hsl2rgb)(lua_State *L) {
  * Assumes r, g, and b are contained in the set [0, 1] and
  * returns h, s, and v in the set [0, 1].
  */
-int image_(Main_rgb2hsv)(lua_State *L) {
-  THTensor *rgb = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *hsv = luaT_checkudata(L, 2, torch_Tensor);
+int image_(Main_rgb2hsv)(THTensor *rgb, THTensor *hsv) {
 
   int y, x;
   temp_t r, g, b, h, s, v;
@@ -1391,10 +1471,7 @@ int image_(Main_rgb2hsv)(lua_State *L) {
  * Assumes h, s, and l are contained in the set [0, 1] and
  * returns r, g, and b in the set [0, 1].
  */
-int image_(Main_hsv2rgb)(lua_State *L) {
-  THTensor *hsv = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *rgb = luaT_checkudata(L, 2, torch_Tensor);
-
+int image_(Main_hsv2rgb)(THTensor *hsv, THTensor *rgb) {
   int y, x;
   temp_t r, g, b, h, s, v;
   for (y=0; y<hsv->size[1]; y++) {
@@ -1464,10 +1541,8 @@ static inline real image_(gamma_compress_sRGB)(real linear)
  * Assumes r, g, and b are contained in the set [0, 1].
  * LAB output is NOT restricted to [0, 1]!
  */
-int image_(Main_rgb2lab)(lua_State *L) {
-  THTensor *rgb = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *lab = luaT_checkudata(L, 2, torch_Tensor);
-
+int image_(Main_rgb2lab)(THTensor *rgb, THTensor *lab) {
+  
   // CIE Standard
   double epsilon = 216.0/24389.0;
   double k = 24389.0/27.0;
@@ -1515,10 +1590,8 @@ int image_(Main_rgb2lab)(lua_State *L) {
  * Based on http://www.brucelindbloom.com/index.html?Equations.html.
  * returns r, g, and b in the set [0, 1].
  */
-int image_(Main_lab2rgb)(lua_State *L) {
-  THTensor *lab = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *rgb = luaT_checkudata(L, 2, torch_Tensor);
-
+int image_(Main_lab2rgb)(THTensor *lab,THTensor *rgb ) {
+  
   int y,x;
   real r,g,b,l,a,_b;
 
@@ -1565,20 +1638,19 @@ int image_(Main_lab2rgb)(lua_State *L) {
   return 0;
 }
 #else
-int image_(Main_rgb2lab)(lua_State *L) {
-  return luaL_error(L, "image.rgb2lab: not supported for torch.ByteTensor");
+int image_(Main_rgb2lab)(THTensor *rgb, THTensor *lab) {
+  printf("image.rgb2lab: not supported for torch.ByteTensor\n");
+  return -1;
 }
 
-int image_(Main_lab2rgb)(lua_State *L) {
-  return luaL_error(L, "image.lab2rgb: not supported for torch.ByteTensor");
+int image_(Main_lab2rgb)(THTensor *lab, THTensor *rgb) {
+  printf("image.lab2rgb: not supported for torch.ByteTensor\n");
+  return -1;
 }
 #endif // TH_REAL_IS_BYTE
 
 /* Vertically flip an image */
-int image_(Main_vflip)(lua_State *L) {
-  THTensor *dst = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *src = luaT_checkudata(L, 2, torch_Tensor);
-
+int image_(Main_vflip)(THTensor *dst, THTensor *src) {
   int width = dst->size[2];
   int height = dst->size[1];
   int channels = dst->size[0];
@@ -1621,12 +1693,9 @@ int image_(Main_vflip)(lua_State *L) {
   return 0;
 }
 
-
 /* Horizontally flip an image */
-int image_(Main_hflip)(lua_State *L) {
-  THTensor *dst = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *src = luaT_checkudata(L, 2, torch_Tensor);
-
+int image_(Main_hflip)(THTensor *dst, THTensor *src) {
+  
   int width = dst->size[2];
   int height = dst->size[1];
   int channels = dst->size[0];
@@ -1670,17 +1739,16 @@ int image_(Main_hflip)(lua_State *L) {
 }
 
 /* flip an image along a specified dimension */
-int image_(Main_flip)(lua_State *L) {
-  THTensor *dst = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *src = luaT_checkudata(L, 2, torch_Tensor);
-  long flip_dim = luaL_checklong(L, 3);
+int image_(Main_flip)(THTensor *dst, THTensor *src, long flip_dim) {
 
   if ((dst->nDimension != 5) || (src->nDimension != 5)) {
-    luaL_error(L, "image.flip: expected 5 dimensions for src and dst");
+    printf("image.flip: expected 5 dimensions for src and dst\n");
+    exit(0);
   }
 
   if (flip_dim < 1 || flip_dim > dst->nDimension || flip_dim > 5) {
-    luaL_error(L, "image.flip: flip_dim out of bounds");
+    printf("image.flip: flip_dim out of bounds\n");
+    exit(0);
   }
   flip_dim--;  //  Make it zero indexed
 
@@ -1688,7 +1756,8 @@ int image_(Main_flip)(lua_State *L) {
   real *dst_data = THTensor_(data)(dst);
   real *src_data = THTensor_(data)(src);
   if (dst_data == src_data) {
-    luaL_error(L, "image.flip: in-place flip not supported");
+    printf("image.flip: in-place flip not supported\n");
+    exit(0);
   }
 
   long size0 = dst->size[0];
@@ -1700,7 +1769,8 @@ int image_(Main_flip)(lua_State *L) {
   if (src->size[0] != size0 || src->size[1] != size1 ||
       src->size[2] != size2 || src->size[3] != size3 ||
       src->size[4] != size4) {
-    luaL_error(L, "image.flip: src and dst are not the same size");
+    printf("image.flip: src and dst are not the same size\n");
+    exit(0);
   }
 
   long *is = src->stride;
@@ -1785,15 +1855,8 @@ static inline void image_(Main_bicubicInterpolate)(
  * field is in the space of the destination image, each vector
  * ponts to a source pixel in the original image.
  */
-int image_(Main_warp)(lua_State *L) {
-  THTensor *dst = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *src = luaT_checkudata(L, 2, torch_Tensor);
-  THTensor *flowfield = luaT_checkudata(L, 3, torch_Tensor);
-  int mode = lua_tointeger(L, 4);
-  int offset_mode = lua_toboolean(L, 5);
-  int clamp_mode = lua_tointeger(L, 6);
-  real pad_value = (real)lua_tonumber(L, 7);
-
+int image_(Main_warp)(THTensor *dst, THTensor *src, THTensor *flowfield, int mode, int offset_mode, int clamp_mode, real pad_value ) {
+  
   // dims
   int width = dst->size[2];
   int height = dst->size[1];
@@ -1978,20 +2041,23 @@ int image_(Main_warp)(lua_State *L) {
 }
 
 
-int image_(Main_gaussian)(lua_State *L) {
-  THTensor *dst = luaT_checkudata(L, 1, torch_Tensor);
+int image_(Main_gaussian)(THTensor *dst,
+		temp_t amplitude,
+		int normalize,
+		temp_t sigma_u,
+		temp_t sigma_v,
+		temp_t mean_u,
+		temp_t mean_v)
+{
   long width = dst->size[1];
   long height = dst->size[0];
   long *os = dst->stride;
 
   real *dst_data = THTensor_(data)(dst);
 
-  temp_t amplitude = (temp_t)lua_tonumber(L, 2);
-  int normalize = (int)lua_toboolean(L, 3);
-  temp_t sigma_u = (temp_t)lua_tonumber(L, 4);
-  temp_t sigma_v = (temp_t)lua_tonumber(L, 5);
-  temp_t mean_u = (temp_t)lua_tonumber(L, 6) * width + 0.5;
-  temp_t mean_v = (temp_t)lua_tonumber(L, 7) * height + 0.5;
+
+  mean_u = mean_u * width + 0.5;
+  mean_v = mean_v * height + 0.5;
 
   // Precalculate 1/(sigma*size) for speed (for some stupid reason the pragma
   // omp declaration prevents gcc from optimizing the inside loop on my macine:
@@ -2034,12 +2100,8 @@ int image_(Main_gaussian)(lua_State *L) {
  * Borrowed from github.com/clementfarabet/lua---imgraph
  * with Clément's permission for implementing y2jet()
  */
-int image_(Main_colorize)(lua_State *L) {
-  // get args
-  THTensor *output = (THTensor *)luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *input = (THTensor *)luaT_checkudata(L, 2, torch_Tensor);
-  THTensor *colormap = (THTensor *)luaT_checkudata(L, 3, torch_Tensor);
-
+int image_(Main_colorize)(THTensor *output, THTensor *input, THTensor *colormap) {
+  
   // dims
   long height = input->size[0];
   long width = input->size[1];
@@ -2080,16 +2142,24 @@ int image_(Main_colorize)(lua_State *L) {
   return 0;
 }
 
-int image_(Main_rgb2y)(lua_State *L) {
-  THTensor *rgb = luaT_checkudata(L, 1, torch_Tensor);
-  THTensor *yim = luaT_checkudata(L, 2, torch_Tensor);
-
-  luaL_argcheck(L, rgb->nDimension == 3, 1, "image.rgb2y: src not 3D");
-  luaL_argcheck(L, yim->nDimension == 2, 2, "image.rgb2y: dst not 2D");
-  luaL_argcheck(L, rgb->size[1] == yim->size[0], 2,
-                "image.rgb2y: src and dst not of same height");
-  luaL_argcheck(L, rgb->size[2] == yim->size[1], 2,
-                "image.rgb2y: src and dst not of same width");
+int image_(Main_rgb2y)(THTensor *rgb, THTensor *yim ) {
+  
+  if (rgb->nDimension != 3)	{
+  	printf("image.rgb2y: src not 3D\n");
+  	exit(0);
+ 	}
+  if (yim->nDimension != 2)  {
+  	printf("image.rgb2y: dst not 2D\n");
+  	exit(0);
+  }
+  if (rgb->size[1] != yim->size[0])	{
+  	printf("image.rgb2y: src and dst not of same height\n");
+  	exit(0);
+  }
+  if (rgb->size[2] != yim->size[1])	{
+    printf("image.rgb2y: src and dst not of same width\n");
+    exit(0);
+  }
 
   int y, x;
   temp_t r, g, b, yc;
@@ -2169,21 +2239,10 @@ static inline void image_(drawChar)(THTensor *output, int x, int y, unsigned cha
   }
 }
 
-int image_(Main_drawtext)(lua_State *L) {
-  // get args
-  THTensor *output = (THTensor *)luaT_checkudata(L, 1, torch_Tensor);
-  const char* text = lua_tostring(L, 2);
-  long x = luaL_checklong(L, 3);
-  long y = luaL_checklong(L, 4);
-  int size = luaL_checkint(L, 5);
-  int cr = luaL_checkint(L, 6);
-  int cg = luaL_checkint(L, 7);
-  int cb = luaL_checkint(L, 8);
-  int bg_cr = luaL_checkint(L, 9);
-  int bg_cg = luaL_checkint(L, 10);
-  int bg_cb = luaL_checkint(L, 11);
-  int wrap = luaL_checkint(L, 12);
-
+int image_(Main_drawtext)(THTensor *output,  const char* text, long x, long y, int size, int cr, 
+													int cg, int cb, int bg_cr, int bg_cg, int bg_cb, int wrap) 
+{
+ 
   long len = strlen(text);
 
   // dims
@@ -2216,17 +2275,16 @@ int image_(Main_drawtext)(lua_State *L) {
   return 0;
 }
 
-int image_(Main_drawRect)(lua_State *L) {
-  THTensor *output = (THTensor *)luaT_checkudata(L, 1, torch_Tensor);
-  long x1long = luaL_checklong(L, 2);
-  long y1long = luaL_checklong(L, 3);
-  long x2long = luaL_checklong(L, 4);
-  long y2long = luaL_checklong(L, 5);
-  int lineWidth = luaL_checkint(L, 6);
-  int cr = luaL_checkint(L, 7);
-  int cg = luaL_checkint(L, 8);
-  int cb = luaL_checkint(L, 9);
-
+int image_(Main_drawRect)(THTensor *output,
+							long x1long,
+							long y1long,
+							long x2long,
+							long y2long,
+							int lineWidth,
+							int cr,
+							int cg,
+							int cb)
+{
   int loffset = lineWidth / 2 + 1;
   int uoffset = lineWidth - loffset - 1;
   int x1l = (int) MAX(0, x1long - loffset);
@@ -2256,44 +2314,6 @@ int image_(Main_drawRect)(lua_State *L) {
   }
 
   return 0;
-}
-
-
-static const struct luaL_Reg image_(Main__) [] = {
-  {"scaleSimple", image_(Main_scaleSimple)},
-  {"scaleBilinear", image_(Main_scaleBilinear)},
-  {"scaleBicubic", image_(Main_scaleBicubic)},
-  {"rotate", image_(Main_rotate)},
-  {"rotateBilinear", image_(Main_rotateBilinear)},
-  {"polar", image_(Main_polar)},
-  {"polarBilinear", image_(Main_polarBilinear)},
-  {"logPolar", image_(Main_logPolar)},
-  {"logPolarBilinear", image_(Main_logPolarBilinear)},
-  {"translate", image_(Main_translate)},
-  {"cropNoScale", image_(Main_cropNoScale)},
-  {"warp", image_(Main_warp)},
-  {"saturate", image_(Main_saturate)},
-  {"rgb2y",   image_(Main_rgb2y)},
-  {"rgb2hsv", image_(Main_rgb2hsv)},
-  {"rgb2hsl", image_(Main_rgb2hsl)},
-  {"hsv2rgb", image_(Main_hsv2rgb)},
-  {"hsl2rgb", image_(Main_hsl2rgb)},
-  {"rgb2lab", image_(Main_rgb2lab)},
-  {"lab2rgb", image_(Main_lab2rgb)},
-  {"gaussian", image_(Main_gaussian)},
-  {"vflip", image_(Main_vflip)},
-  {"hflip", image_(Main_hflip)},
-  {"flip", image_(Main_flip)},
-  {"colorize", image_(Main_colorize)},
-  {"text", image_(Main_drawtext)},
-  {"drawRect", image_(Main_drawRect)},
-  {NULL, NULL}
-};
-
-void image_(Main_init)(lua_State *L)
-{
-  luaT_pushmetatable(L, torch_Tensor);
-  luaT_registeratname(L, image_(Main__), "image");
 }
 
 #endif // TH_GENERIC_FILE
