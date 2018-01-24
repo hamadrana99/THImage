@@ -105,6 +105,7 @@ INSTALL(FILES
   ppm.h
   lua_png.h
   THImage.h
+  font.c
   DESTINATION "${CMAKE_INSTALL_PREFIX}/include/THImage")
 INSTALL(FILES
   generic/image.h

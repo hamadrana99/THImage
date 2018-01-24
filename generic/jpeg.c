@@ -121,13 +121,13 @@ int libjpeg_(Main_size)(const char *filename, int *channels, int *height, int *w
   return 3;
 }
 
-int libjpeg_(Main_load)(const char *filename, THByteTensor *src, THTensor* tensor)
+THTensor* libjpeg_(Main_load)(const char *filename, THByteTensor *src)
 {
   
 #if !defined(HAVE_JPEG_MEM_SRC)
   if (src != NULL) {
      printf(JPEG_MEM_SRC_ERR_MSG);
-     return -1;
+     exit(0);
   }
 #endif
 
@@ -160,7 +160,7 @@ int libjpeg_(Main_load)(const char *filename, THByteTensor *src, THTensor* tenso
     if ((infile = fopen(filename, "rb")) == NULL)
     {
       printf("cannot open file <%s> for reading\n", filename);
-      return -1;
+      exit(0);
     }
   } else {
     /* We're loading from a ByteTensor */
@@ -185,7 +185,7 @@ int libjpeg_(Main_load)(const char *filename, THByteTensor *src, THTensor* tenso
       fclose(infile);
     }
     printf(jerr.msg);
-    return -1;
+    exit(0);
   }
   /* Now we can initialize the JPEG decompression object. */
   jpeg_create_decompress(&cinfo);
@@ -230,7 +230,7 @@ int libjpeg_(Main_load)(const char *filename, THByteTensor *src, THTensor* tenso
   const unsigned int chans = cinfo.output_components;
   const unsigned int height = cinfo.output_height;
   const unsigned int width = cinfo.output_width;
-  tensor = THTensor_(newWithSize3d)(chans, height, width);
+  THTensor *tensor = THTensor_(newWithSize3d)(chans, height, width);
   real *tdata = THTensor_(data)(tensor);
   buffer = (*cinfo.mem->alloc_sarray)
     ((j_common_ptr) &cinfo, JPOOL_IMAGE, chans * width, 1);
@@ -300,7 +300,7 @@ int libjpeg_(Main_load)(const char *filename, THByteTensor *src, THTensor* tenso
    */
 
   /* And we're done! */
-  return 1;
+  return tensor;
 }
 
 /*

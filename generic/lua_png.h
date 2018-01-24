@@ -11,9 +11,8 @@
  * Clement: modified for Torch7.
  */
 
-int libpng_(Main_load)(const char *file_name,
+THTensor* libpng_(Main_load)(const char *file_name,
                               THByteTensor *src,	                    //source tensor, set to NULL if reading from file
-                              THTensor *tensor,	                      //destination tensor
                               int *bit_depth_to_return);              
 
 int libpng_(Main_save)(const char *file_name,

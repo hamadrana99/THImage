@@ -54,11 +54,11 @@ static inline real image_(FromIntermediate)(temp_t x);
   {"drawRect", image_(Main_drawRect)},
 */
 
-static void image_(Main_op_validate)(THTensor *Tsrc, THTensor *Tdst);
-static long image_(Main_op_stride)( THTensor *T, int i);
+void image_(Main_op_validate)(THTensor *Tsrc, THTensor *Tdst);
+long image_(Main_op_stride)( THTensor *T, int i);
 
-static long image_(Main_op_depth)(THTensor *T);
-static void image_(Main_scaleLinear_rowcol)(THTensor *Tsrc,
+long image_(Main_op_depth)(THTensor *T);
+void image_(Main_scaleLinear_rowcol)(THTensor *Tsrc,
                                             THTensor *Tdst,
                                             long src_start,
                                             long dst_start,
@@ -74,7 +74,7 @@ static inline temp_t image_(Main_cubicInterpolate)(temp_t p0,
                                                    temp_t x) ;
 
 
-static void image_(Main_scaleCubic_rowcol)(THTensor *Tsrc,
+void image_(Main_scaleCubic_rowcol)(THTensor *Tsrc,
                                            THTensor *Tdst,
                                            long src_start,
                                            long dst_start,
@@ -82,21 +82,21 @@ static void image_(Main_scaleCubic_rowcol)(THTensor *Tsrc,
                                            long dst_stride,
                                            long src_len,
                                            long dst_len );
-static int image_(Main_scaleBilinear)(THTensor *Tsrc, THTensor *Tdst);
-static int image_(Main_scaleBicubic)(THTensor *Tsrc, THTensor *Tdst);
-static int image_(Main_scaleSimple)(THTensor *Tsrc, THTensor *Tdst);
+int image_(Main_scaleBilinear)(THTensor *Tsrc, THTensor *Tdst);
+int image_(Main_scaleBicubic)(THTensor *Tsrc, THTensor *Tdst);
+int image_(Main_scaleSimple)(THTensor *Tsrc, THTensor *Tdst);
 
-static int image_(Main_rotate)(THTensor *Tsrc, THTensor *Tdst, float theta);
-static int image_(Main_rotateBilinear)(THTensor *Tsrc, THTensor *Tdst, float theta);
-static int image_(Main_polar)(THTensor *Tsrc, THTensor *Tdst, float doFull);
-static int image_(Main_polarBilinear)(THTensor *Tsrc, THTensor *Tdst, float doFull);
-static int image_(Main_logPolar)(THTensor *Tsrc, THTensor *Tdst, float doFull);
-static int image_(Main_logPolarBilinear)(THTensor *Tsrc, THTensor *Tdst, float doFull);
+int image_(Main_rotate)(THTensor *Tsrc, THTensor *Tdst, float theta);
+int image_(Main_rotateBilinear)(THTensor *Tsrc, THTensor *Tdst, float theta);
+int image_(Main_polar)(THTensor *Tsrc, THTensor *Tdst, int doFull);
+int image_(Main_polarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull);
+int image_(Main_logPolar)(THTensor *Tsrc, THTensor *Tdst, int doFull);
+int image_(Main_logPolarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull);
 
-static int image_(Main_cropNoScale)(THTensor *Tsrc, THTensor *Tdst, long startx, long starty);
+int image_(Main_cropNoScale)(THTensor *Tsrc, THTensor *Tdst, long startx, long starty);
 
-static int image_(Main_translate)(THTensor *Tsrc, THTensor *Tdst, long shiftx, long shifty);
-static int image_(Main_saturate)(THTensor *input) ;
+int image_(Main_translate)(THTensor *Tsrc, THTensor *Tdst, long shiftx, long shifty);
+int image_(Main_saturate)(THTensor *input) ;
 
 /*
  * Converts an RGB color value to HSL. Conversion formula

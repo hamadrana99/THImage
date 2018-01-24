@@ -4,7 +4,7 @@
 
 int libppm_(Main_size)(const char *filename, int *channels, int *height, int *width);
 
-int libppm_(Main_load)(const char *filename, THTensor *tensor);
+THTensor* libppm_(Main_load)(const char *filename);
 
 int libppm_(Main_save)(const char *filename, THTensor *tensor);
 #endif

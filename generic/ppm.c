@@ -47,13 +47,12 @@ int libppm_(Main_size)(const char *filename, int *channels, int *height, int *wi
   return 3;
 }
 
-int libppm_(Main_load)(const char *filename,
-								THTensor *tensor)			//destination
+THTensor* libppm_(Main_load)(const char *filename)
 {
   FILE* fp = fopen ( filename, "r" );
   if ( !fp ) {
     printf("cannot open file <%s> for reading\n", filename);
-    return -1;
+    exit(0);
   }
 
   long W,H,C;
@@ -66,7 +65,7 @@ int libppm_(Main_load)(const char *filename,
     W = H = 0;
     fclose(fp);
     printf("corrupted file\n");
-    return -1;
+    exit(0);
   }
 
   n = (char)getc(fp);
@@ -123,17 +122,17 @@ int libppm_(Main_load)(const char *filename,
     W=H=C=0;
     fclose ( fp );
     printf("unsupported magic number: P%c\n", n);
-    return -1;
+    exit(0);
   }
 
   if (!ok) {
     fclose ( fp );
     printf("corrupted file or read error\n");
-	return -1;
+	exit(0);
   }
 
   // export tensor
-  tensor = THTensor_(newWithSize3d)(C,H,W);
+  THTensor *tensor = THTensor_(newWithSize3d)(C,H,W);
   real *data = THTensor_(data)(tensor);
   long i,k,j=0;
   int val;
@@ -154,7 +153,7 @@ int libppm_(Main_load)(const char *filename,
   fclose(fp);
 
   // return loaded image
-  return 1;
+  return tensor;
 }
 
 int libppm_(Main_save)(const char *filename,

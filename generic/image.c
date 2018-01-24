@@ -11,7 +11,7 @@ static inline real image_(FromIntermediate)(temp_t x) {
   return x;
 }
 
-static void image_(Main_op_validate)(THTensor *Tsrc, THTensor *Tdst){
+void image_(Main_op_validate)(THTensor *Tsrc, THTensor *Tdst){
 
   long src_depth = 1;
   long dst_depth = 1;
@@ -40,7 +40,7 @@ static void image_(Main_op_validate)(THTensor *Tsrc, THTensor *Tdst){
   }
 }
 
-static long image_(Main_op_stride)( THTensor *T, int i){
+long image_(Main_op_stride)( THTensor *T, int i){
   if (T->nDimension == 2) {
     if (i == 0) return 0;
     else return T->stride[i-1];
@@ -48,12 +48,12 @@ static long image_(Main_op_stride)( THTensor *T, int i){
   return T->stride[i];
 }
 
-static long image_(Main_op_depth)(THTensor *T){
+long image_(Main_op_depth)(THTensor *T){
   if(T->nDimension == 3) return T->size[0]; /* rgb or rgba */
   return 1; /* greyscale */
 }
 
-static void image_(Main_scaleLinear_rowcol)(THTensor *Tsrc,
+void image_(Main_scaleLinear_rowcol)(THTensor *Tsrc,
                                             THTensor *Tdst,
                                             long src_start,
                                             long dst_start,
@@ -138,7 +138,7 @@ static inline temp_t image_(Main_cubicInterpolate)(temp_t p0,
 }
 
 
-static void image_(Main_scaleCubic_rowcol)(THTensor *Tsrc,
+void image_(Main_scaleCubic_rowcol)(THTensor *Tsrc,
                                            THTensor *Tdst,
                                            long src_start,
                                            long dst_start,
@@ -198,7 +198,7 @@ static void image_(Main_scaleCubic_rowcol)(THTensor *Tsrc,
   }
 }
 
-static int image_(Main_scaleBilinear)(THTensor *Tsrc, THTensor *Tdst) {
+int image_(Main_scaleBilinear)(THTensor *Tsrc, THTensor *Tdst) {
 
   THTensor *Ttmp;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height;
@@ -260,7 +260,7 @@ static int image_(Main_scaleBilinear)(THTensor *Tsrc, THTensor *Tdst) {
   return 0;
 }
 
-static int image_(Main_scaleBicubic)(THTensor *Tsrc, THTensor *Tdst) {
+int image_(Main_scaleBicubic)(THTensor *Tsrc, THTensor *Tdst) {
 
   THTensor *Ttmp;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height;
@@ -321,7 +321,7 @@ static int image_(Main_scaleBicubic)(THTensor *Tsrc, THTensor *Tdst) {
   return 0;
 }
 
-static int image_(Main_scaleSimple)(THTensor *Tsrc, THTensor *Tdst)
+int image_(Main_scaleSimple)(THTensor *Tsrc, THTensor *Tdst)
 {
   real *src, *dst;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
@@ -405,7 +405,7 @@ static int image_(Main_scaleSimple)(THTensor *Tsrc, THTensor *Tdst)
   return 0;
 }
 
-static int image_(Main_rotate)(THTensor *Tsrc, THTensor *Tdst, float theta)
+int image_(Main_rotate)(THTensor *Tsrc, THTensor *Tdst, float theta)
 {
   float cos_theta, sin_theta;
   real *src, *dst;
@@ -505,7 +505,7 @@ static int image_(Main_rotate)(THTensor *Tsrc, THTensor *Tdst, float theta)
   }
   return 0;
 }
-static int image_(Main_rotateBilinear)(THTensor *Tsrc, THTensor *Tdst, float theta)
+int image_(Main_rotateBilinear)(THTensor *Tsrc, THTensor *Tdst, float theta)
 {
  real *src, *dst;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
@@ -616,7 +616,7 @@ static int image_(Main_rotateBilinear)(THTensor *Tsrc, THTensor *Tdst, float the
   return 0;
 }
 
-static int image_(Main_polar)(THTensor *Tsrc, THTensor *Tdst, float doFull)
+int image_(Main_polar)(THTensor *Tsrc, THTensor *Tdst, int doFull)
 {
     real *src, *dst;
     long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
@@ -715,7 +715,7 @@ static int image_(Main_polar)(THTensor *Tsrc, THTensor *Tdst, float doFull)
     }
     return 0;
 }
-static int image_(Main_polarBilinear)(THTensor *Tsrc, THTensor *Tdst, float doFull)
+int image_(Main_polarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull)
 {
     real *src, *dst;
     long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
@@ -850,7 +850,7 @@ static int image_(Main_polarBilinear)(THTensor *Tsrc, THTensor *Tdst, float doFu
     return 0;
 }
 
-static int image_(Main_logPolar)(THTensor *Tsrc, THTensor *Tdst, float doFull)
+int image_(Main_logPolar)(THTensor *Tsrc, THTensor *Tdst, int doFull)
 {
     real *src, *dst;
     long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
@@ -952,7 +952,7 @@ static int image_(Main_logPolar)(THTensor *Tsrc, THTensor *Tdst, float doFull)
     }
     return 0;
 }
-static int image_(Main_logPolarBilinear)(THTensor *Tsrc, THTensor *Tdst, float doFull)
+int image_(Main_logPolarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull)
 {
     real *src, *dst;
     long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
@@ -1089,7 +1089,7 @@ static int image_(Main_logPolarBilinear)(THTensor *Tsrc, THTensor *Tdst, float d
 }
 
 
-static int image_(Main_cropNoScale)(THTensor *Tsrc, THTensor *Tdst, long startx, long starty)
+int image_(Main_cropNoScale)(THTensor *Tsrc, THTensor *Tdst, long startx, long starty)
 {
   real *src, *dst;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
@@ -1164,7 +1164,7 @@ static int image_(Main_cropNoScale)(THTensor *Tsrc, THTensor *Tdst, long startx,
   return 0;
 }
 
-static int image_(Main_translate)(THTensor *Tsrc, THTensor *Tdst, long shiftx, long shifty)
+int image_(Main_translate)(THTensor *Tsrc, THTensor *Tdst, long shiftx, long shifty)
 {
   real *src, *dst;
   long dst_stride0, dst_stride1, dst_stride2, dst_width, dst_height, dst_depth;
@@ -1225,7 +1225,7 @@ static int image_(Main_translate)(THTensor *Tsrc, THTensor *Tdst, long shiftx, l
   return 0;
 }
 
-static int image_(Main_saturate)(THTensor *input) {
+int image_(Main_saturate)(THTensor *input) {
 #ifdef TH_REAL_IS_BYTE
   // Noop since necessarily constrained to [0, 255].
 #else

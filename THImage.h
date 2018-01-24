@@ -5,6 +5,7 @@
 #include "image.h"
 #include <TH.h>
 #include <stdio.h>
+#include <string.h>
 
 
 #define torch_(NAME) TH_CONCAT_3(torch_, Real, NAME)

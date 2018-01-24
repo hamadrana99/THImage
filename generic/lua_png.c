@@ -10,12 +10,11 @@
  * Clement: modified for Torch7.
  */
 
-int libpng_(Main_load)(const char *file_name,
+THTensor* libpng_(Main_load)(const char *file_name,
                               THByteTensor *src,	                //source tensor, set to NULL if reading from file
-                              THTensor *tensor,	                  //destination tensor
                               int *bit_depth_to_return)
 {
-
+ 
   png_byte header[8];    // 8 is the maximum size that can be checked
 
   int width, height, bit_depth;
@@ -34,16 +33,16 @@ int libpng_(Main_load)(const char *file_name,
     fp = fopen(file_name, "rb");
     if (!fp) {
       printf("[read_png_file] File %s could not be opened for reading\n", file_name);
-	  return -1;
+	  exit(0);
 	}
     fread_ret = fread(header, 1, 8, fp);
     if (fread_ret != 8) {
       printf("[read_png_file] File %s error reading header\n", file_name);
-      return -1;
+      exit(0);
     }
     if (png_sig_cmp(header, 0, 8)) {
       printf("[read_png_file] File %s is not recognized as a PNG file\n", file_name);
-      return -1;
+      exit(0);
     }
   } else {
     /* We're loading from a ByteTensor */
@@ -53,7 +52,7 @@ int libpng_(Main_load)(const char *file_name,
     fp = NULL;
     if (png_sig_cmp(inmem.buffer, 0, 8))  {
       printf("[read_png_byte_tensor] ByteTensor is not recognized as a PNG file\n");
-      return -1;
+      exit(0);
     }
   }
   /* initialize stuff */
@@ -61,7 +60,7 @@ int libpng_(Main_load)(const char *file_name,
 
   if (!png_ptr) {
     printf("[read_png] png_create_read_struct failed\n");
-    return -1;
+    exit(0);
   }
   png_set_error_fn(png_ptr, &errmsg, libpng_error_fn, NULL);
 
@@ -72,7 +71,7 @@ int libpng_(Main_load)(const char *file_name,
       fclose(fp);
     }
     printf("[read_png] png_create_info_struct failed\n");
-    return -1;
+    exit(0);
   }
 
   if (setjmp(png_jmpbuf(png_ptr))) {
@@ -81,7 +80,7 @@ int libpng_(Main_load)(const char *file_name,
       fclose(fp);
     }
     printf("[read_png] Error during init_io: %s\n", errmsg.str);
-    return -1;
+    exit(0);
   }
 
   if (src == NULL) {
@@ -120,7 +119,7 @@ int libpng_(Main_load)(const char *file_name,
       fclose(fp);
     }
     printf("[read_png_file] Unknown color space\n");
-    return -1;
+    exit(0);
   }
 
   if (bit_depth < 8) {
@@ -136,11 +135,11 @@ int libpng_(Main_load)(const char *file_name,
       fclose(fp);
     }
     printf("[read_png_file] Error during read_image: %s\n", errmsg.str);
-    return -1;
+    exit(0);
   }
 
   /* alloc tensor */
-  tensor = THTensor_(newWithSize3d)(depth, height, width);
+  THTensor *tensor = THTensor_(newWithSize3d)(depth, height, width);
   real *tensor_data = THTensor_(data)(tensor);
 
   /* alloc data in lib format */
@@ -203,7 +202,7 @@ int libpng_(Main_load)(const char *file_name,
   }
   (*bit_depth_to_return)=bit_depth;
 
-  return 2;
+  return tensor;
 }
 
 
