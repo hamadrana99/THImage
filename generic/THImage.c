@@ -62,7 +62,6 @@ THTensor* image_(todepth)(THTensor* src, int depth)
 		}
 		else if (src->size[0]==1)	//loaded image has 1 channel
 		{
-		    printf("Hey2\n");
 			dst = THTensor_(newWithSize3d)(3, src->size[1], src->size[2]);
 			THTensor *slice = THTensor_(new)();
 			THTensor_(select)(slice, dst, 0, 0);
