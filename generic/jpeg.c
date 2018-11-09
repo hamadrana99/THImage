@@ -24,7 +24,7 @@ METHODDEF(void) libjpeg_(Main_output_message) (j_common_ptr cinfo)
 
   (*cinfo->err->format_message) (cinfo, myerr->msg);
 }
-int libjpeg_(Main_size)(const char *filename, int *channels, int *height, int *width)
+int libjpeg_(Main_size)(const char *filename, int *height, int *width, int *channels)
 {
   /* This struct contains the JPEG decompression parameters and pointers to
    * working space (which is allocated as needed by the JPEG library).
@@ -97,9 +97,9 @@ int libjpeg_(Main_size)(const char *filename, int *channels, int *height, int *w
    * with the stdio data source.
    */
 
-  (*channels) = cinfo.output_components;
   (*height) = cinfo.output_height;
   (*width) = cinfo.output_width;
+  (*channels) = cinfo.output_components;
 
   /* Step 8: Release JPEG decompression object */
 
@@ -230,7 +230,7 @@ THTensor* libjpeg_(Main_load)(const char *filename, THByteTensor *src)
   const unsigned int chans = cinfo.output_components;
   const unsigned int height = cinfo.output_height;
   const unsigned int width = cinfo.output_width;
-  THTensor *tensor = THTensor_(newWithSize3d)(chans, height, width);
+  THTensor *tensor = THTensor_(newWithSize3d)(height, width, chans);
   real *tdata = THTensor_(data)(tensor);
   buffer = (*cinfo.mem->alloc_sarray)
     ((j_common_ptr) &cinfo, JPOOL_IMAGE, chans * width, 1);
@@ -249,29 +249,9 @@ THTensor* libjpeg_(Main_load)(const char *filename, THByteTensor *src)
     (void) jpeg_read_scanlines(&cinfo, buffer, 1);
     const unsigned int j = cinfo.output_scanline-1;
 
-    if (chans == 3) { /* special-case for speed */
-      real *td1 = tdata + 0 * (height * width) + j * width;
-      real *td2 = tdata + 1 * (height * width) + j * width;
-      real *td3 = tdata + 2 * (height * width) + j * width;
-      const unsigned char *buf = buffer[0];
-      for(i = 0; i < width; i++) {
-        *td1++ = (real)buf[chans * i + 0];
-        *td2++ = (real)buf[chans * i + 1];
-        *td3++ = (real)buf[chans * i + 2];
-      }
-    } else if (chans == 1) { /* special-case for speed */
-      real *td = tdata + j * width;
-      for(i = 0; i < width; i++) {
-        *td++ = (real)buffer[0][i];
-      }
-    } else { /* general case */
-      for(k = 0; k < chans; k++) {
-        const unsigned int k_ = k;
-        real *td = tdata + k_ * (height * width) + j * width;
-        for(i = 0; i < width; i++) {
-          *td++ = (real)buffer[0][chans * i + k_];
-        }
-      }
+   	real *td = tdata+j*width*chans;
+    for(i = 0; i < chans*width; i++) {
+      *td++ = (real)buffer[0][i];
     }
   }
   /* Step 7: Finish decompression */
@@ -342,9 +322,9 @@ int libjpeg_(Main_save)(const char *filename,
   int width=0, height=0, bytes_per_pixel=0;
   int color_space=0;
   if (tensorc->nDimension == 3) {
-    bytes_per_pixel = tensorc->size[0];
-    height = tensorc->size[1];
-    width = tensorc->size[2];
+    height = tensorc->size[0];
+    width = tensorc->size[1];
+    bytes_per_pixel = tensorc->size[2];
     if (bytes_per_pixel == 3) {
       color_space = JCS_RGB;
     } else if (bytes_per_pixel == 1) {
@@ -367,15 +347,10 @@ int libjpeg_(Main_save)(const char *filename,
   raw_image = (unsigned char *)malloc((sizeof (unsigned char))*width*height*bytes_per_pixel);
 
   /* convert tensor to raw bytes */
-  int x,y,k;
-  for (k=0; k<bytes_per_pixel; k++) {
-    for (y=0; y<height; y++) {
-      for (x=0; x<width; x++) {
-        raw_image[(y*width+x)*bytes_per_pixel+k] = *tensor_data++;
-      }
-    }
+  long i;
+  for (i=0; i<(height*width*bytes_per_pixel); i++) {
+        raw_image[i] = tensor_data[i];
   }
-
   /* this is a pointer to one row of image data */
   JSAMPROW row_pointer[1];
   FILE *outfile = NULL;
@@ -409,14 +384,15 @@ int libjpeg_(Main_save)(const char *filename,
 
   /* Now do the compression .. */
   jpeg_start_compress( &cinfo, TRUE );
-
+  
   /* like reading a file, this time write one row at a time */
   while( cinfo.next_scanline < cinfo.image_height ) {
     row_pointer[0] = &raw_image[ cinfo.next_scanline * cinfo.image_width *  cinfo.input_components];
     jpeg_write_scanlines( &cinfo, row_pointer, 1 );
   }
-
-  /* similar to read file, clean up after we're done compressing */
+  
+  
+	/* similar to read file, clean up after we're done compressing */
   jpeg_finish_compress( &cinfo );
   jpeg_destroy_compress( &cinfo );
 

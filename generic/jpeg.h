@@ -15,7 +15,7 @@ struct my_error_mgr {
 typedef struct my_error_mgr * my_error_ptr;
 #endif
 
-int libjpeg_(Main_size)(const char *filename, int *channels, int *height, int *width);
+int libjpeg_(Main_size)(const char *filename, int *height, int *width, int *channels);
 THTensor* libjpeg_(Main_load)(const char *filename, THByteTensor *src);
 int libjpeg_(Main_save)(const char *filename, THTensor *tensor,	int quality, THByteTensor* tensor_dest);
 

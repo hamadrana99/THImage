@@ -1,7 +1,8 @@
 #ifndef TH_GENERIC_FILE
 #define TH_GENERIC_FILE "generic/ppm.c"
 #else
-int libppm_(Main_size)(const char *filename, int *channels, int *height, int *width)
+
+int libppm_(Main_size)(const char *filename, int *height, int *width, int *channels)
 {
   FILE* fp = fopen ( filename, "r" );
   if ( !fp ) {
@@ -40,10 +41,10 @@ int libppm_(Main_size)(const char *filename, int *channels, int *height, int *wi
 
   fclose(fp);
 
-  (*channels) = C;
   (*height)  = H;
   (*width) = W;
-
+	(*channels) = C;
+  
   return 3;
 }
 
@@ -134,18 +135,16 @@ THTensor* libppm_(Main_load)(const char *filename)
   // export tensor
   THTensor *tensor = THTensor_(newWithSize3d)(C,H,W);
   real *data = THTensor_(data)(tensor);
-  long i,k,j=0;
+  long i,j=0;
   int val;
-  for (i=0; i<W*H; i++) {
-    for (k=0; k<C; k++) {
+  for (i=0; i<W*H*C; i++) {
        if (bpc == 1) {
-          data[k*H*W+i] = (real)r[j++];
+          data[i++] = (real)r[j++];
        } else if (bpc == 2) {
           val = r[j] | (r[j+1] << 8);
           j += 2;
-          data[k*H*W+i] = (real)val;
+          data[i++] = (real)val;
        }
-    }
   }
 
   // cleanup
@@ -166,9 +165,9 @@ int libppm_(Main_save)(const char *filename,
   // dimensions
   long C,H,W,N;
   if (tensorc->nDimension == 3) {
-    C = tensorc->size[0];
-    H = tensorc->size[1];
-    W = tensorc->size[2];
+    H = tensorc->size[0];
+    W = tensorc->size[1];
+    C = tensorc->size[2];
   } else if (tensorc->nDimension == 2) {
     C = 1;
     H = tensorc->size[0];
@@ -178,15 +177,13 @@ int libppm_(Main_save)(const char *filename,
     printf("can only export tensor with geometry: HxW or 1xHxW or 3xHxW\n");
     return -1;
   }
-  N = C*H*W;
+  N = H*W*C;
 
   // convert to chars
   unsigned char *bytes = (unsigned char*)malloc(N);
-  long i,k,j=0;
-  for (i=0; i<W*H; i++) {
-    for (k=0; k<C; k++) {
-      bytes[j++] = (unsigned char)data[k*H*W+i];
-    }
+  long i=0;
+  for (i=0; i<W*H*C; i++) {
+      bytes[i++] = (unsigned char)data[i++];
   }
 
   // open file

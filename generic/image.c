@@ -17,39 +17,39 @@ void image_(Main_op_validate)(THTensor *Tsrc, THTensor *Tdst){
   long dst_depth = 1;
 
   if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
-		printf("rotate: src not 2 or 3 dimensional\n");
+		printf("image.op_validate: src not 2 or 3 dimensional\n");
 		exit(0);
 	}
   if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
-  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	printf("image.op_validate: dst not 2 or 3 dimensional\n");
   	exit(0);
   }
 
-  if(Tdst->nDimension == 3) dst_depth =  Tdst->size[0];
-  if(Tsrc->nDimension == 3) src_depth =  Tsrc->size[0];
+  if(Tdst->nDimension == 3) dst_depth =  Tdst->size[2];
+  if(Tsrc->nDimension == 3) src_depth =  Tsrc->size[2];
 
   if( (Tdst->nDimension==3 && ( src_depth!=dst_depth)) ||
       (Tdst->nDimension!=Tsrc->nDimension) )  {
-    printf("image.scale: src and dst depths do not match");
+    printf("image.op_validate: src and dst depths do not match");
     exit(0);
   }
 
-  if( Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
-    printf("image.scale: src and dst depths do not match");
+  if( (Tdst->nDimension==3) && ( src_depth!=dst_depth) ) {
+    printf("image.op_validte: src and dst depths do not match");
     exit(0);
   }
 }
 
 long image_(Main_op_stride)( THTensor *T, int i){
   if (T->nDimension == 2) {
-    if (i == 0) return 0;
-    else return T->stride[i-1];
+    if (i == 2) return 0;
+    else return T->stride[i];
   }
   return T->stride[i];
 }
 
 long image_(Main_op_depth)(THTensor *T){
-  if(T->nDimension == 3) return T->size[0]; /* rgb or rgba */
+  if(T->nDimension == 3) return T->size[2]; /* rgb or rgba */
   return 1; /* greyscale */
 }
 
@@ -212,7 +212,7 @@ int image_(Main_scaleBilinear)(THTensor *Tsrc, THTensor *Tdst) {
   if (Tdst->nDimension == 3) ndims = 3;
   else ndims = 2;
 
-  Ttmp = THTensor_(newWithSize2d)(Tsrc->size[ndims-2], Tdst->size[ndims-1]);
+  Ttmp = THTensor_(newWithSize2d)(Tsrc->size[0], Tdst->size[1]);
 
   dst_stride0= image_(Main_op_stride)(Tdst,0);
   dst_stride1= image_(Main_op_stride)(Tdst,1);
@@ -223,22 +223,22 @@ int image_(Main_scaleBilinear)(THTensor *Tsrc, THTensor *Tdst) {
   tmp_stride0= image_(Main_op_stride)(Ttmp,0);
   tmp_stride1= image_(Main_op_stride)(Ttmp,1);
   tmp_stride2= image_(Main_op_stride)(Ttmp,2);
-  dst_width=   Tdst->size[ndims-1];
-  dst_height=  Tdst->size[ndims-2];
-  src_width=   Tsrc->size[ndims-1];
-  src_height=  Tsrc->size[ndims-2];
-  tmp_width=   Ttmp->size[1];
+  dst_height=  Tdst->size[0];
+  dst_width=   Tdst->size[1];
+  src_height=  Tsrc->size[0];
+  src_width=   Tsrc->size[1];
   tmp_height=  Ttmp->size[0];
-
+	tmp_width=   Ttmp->size[1];
+  
   for(k=0;k<image_(Main_op_depth)(Tsrc);k++) {
     /* compress/expand rows first */
     for(j = 0; j < src_height; j++) {
       image_(Main_scaleLinear_rowcol)(Tsrc,
                                       Ttmp,
-                                      0*src_stride2+j*src_stride1+k*src_stride0,
-                                      0*tmp_stride2+j*tmp_stride1+k*tmp_stride0,
-                                      src_stride2,
-                                      tmp_stride2,
+                                      0*src_stride1+j*src_stride0+k*src_stride2,
+                                      0*tmp_stride1+j*tmp_stride0+k*tmp_stride2,
+                                      src_stride1,
+                                      tmp_stride1,
                                       src_width,
                                       tmp_width );
 
@@ -248,10 +248,10 @@ int image_(Main_scaleBilinear)(THTensor *Tsrc, THTensor *Tdst) {
     for(i = 0; i < dst_width; i++) {
       image_(Main_scaleLinear_rowcol)(Ttmp,
                                       Tdst,
-                                      i*tmp_stride2+0*tmp_stride1+k*tmp_stride0,
-                                      i*dst_stride2+0*dst_stride1+k*dst_stride0,
-                                      tmp_stride1,
-                                      dst_stride1,
+                                      i*tmp_stride1+0*tmp_stride0+k*tmp_stride2,
+                                      i*dst_stride1+0*dst_stride0+k*dst_stride2,
+                                      tmp_stride0,
+                                      dst_stride0,
                                       tmp_height,
                                       dst_height );
     }
@@ -274,7 +274,7 @@ int image_(Main_scaleBicubic)(THTensor *Tsrc, THTensor *Tdst) {
   if (Tdst->nDimension == 3) ndims = 3;
   else ndims = 2;
 
-  Ttmp = THTensor_(newWithSize2d)(Tsrc->size[ndims-2], Tdst->size[ndims-1]);
+  Ttmp = THTensor_(newWithSize2d)(Tsrc->size[0], Tdst->size[1]);
 
   dst_stride0= image_(Main_op_stride)(Tdst,0);
   dst_stride1= image_(Main_op_stride)(Tdst,1);
@@ -285,22 +285,22 @@ int image_(Main_scaleBicubic)(THTensor *Tsrc, THTensor *Tdst) {
   tmp_stride0= image_(Main_op_stride)(Ttmp,0);
   tmp_stride1= image_(Main_op_stride)(Ttmp,1);
   tmp_stride2= image_(Main_op_stride)(Ttmp,2);
-  dst_width=   Tdst->size[ndims-1];
-  dst_height=  Tdst->size[ndims-2];
-  src_width=   Tsrc->size[ndims-1];
-  src_height=  Tsrc->size[ndims-2];
-  tmp_width=   Ttmp->size[1];
+  dst_height=  Tdst->size[0];
+  dst_width=   Tdst->size[1];
+  src_height=  Tsrc->size[0];
+  src_width=   Tsrc->size[1];
   tmp_height=  Ttmp->size[0];
-
+  tmp_width=   Ttmp->size[1];
+  
   for(k=0;k<image_(Main_op_depth)(Tsrc);k++) {
     /* compress/expand rows first */
     for(j = 0; j < src_height; j++) {
       image_(Main_scaleCubic_rowcol)(Tsrc,
                                      Ttmp,
-                                     0*src_stride2+j*src_stride1+k*src_stride0,
-                                     0*tmp_stride2+j*tmp_stride1+k*tmp_stride0,
-                                     src_stride2,
-                                     tmp_stride2,
+                                     0*src_stride1+j*src_stride0+k*src_stride2,
+                                     0*tmp_stride1+j*tmp_stride0+k*tmp_stride2,
+                                     src_stride1,
+                                     tmp_stride1,
                                      src_width,
                                      tmp_width );
     }
@@ -309,10 +309,10 @@ int image_(Main_scaleBicubic)(THTensor *Tsrc, THTensor *Tdst) {
     for(i = 0; i < dst_width; i++) {
       image_(Main_scaleCubic_rowcol)(Ttmp,
                                      Tdst,
-                                     i*tmp_stride2+0*tmp_stride1+k*tmp_stride0,
-                                     i*dst_stride2+0*dst_stride1+k*dst_stride0,
-                                     tmp_stride1,
-                                     dst_stride1,
+                                     i*tmp_stride1+0*tmp_stride0+k*tmp_stride2,
+                                     i*dst_stride1+0*dst_stride0+k*dst_stride2,
+                                     tmp_stride0,
+                                     dst_stride0,
                                      tmp_height,
                                      dst_height );
     }
@@ -330,43 +330,43 @@ int image_(Main_scaleSimple)(THTensor *Tsrc, THTensor *Tdst)
   float scx, scy;
 
   if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
-		printf("rotate: src not 2 or 3 dimensional\n");
+		printf("image.scaleSimple: src not 2 or 3 dimensional\n");
 		exit(0);
 	}
   if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
-  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	printf("image.scaleSimple: dst not 2 or 3 dimensional\n");
   	exit(0);
   }
 
   src= THTensor_(data)(Tsrc);
   dst= THTensor_(data)(Tdst);
 
-  dst_stride0 = 0;
-  dst_stride1 = Tdst->stride[Tdst->nDimension-2];
-  dst_stride2 = Tdst->stride[Tdst->nDimension-1];
+  dst_stride0 = Tdst->stride[0];
+  dst_stride1 = Tdst->stride[1];
+  dst_stride2 = 0;
+  dst_height = Tdst->size[0];
+  dst_width = Tdst->size[1];
   dst_depth =  0;
-  dst_height = Tdst->size[Tdst->nDimension-2];
-  dst_width = Tdst->size[Tdst->nDimension-1];
   if(Tdst->nDimension == 3) {
-    dst_stride0 = Tdst->stride[0];
-    dst_depth = Tdst->size[0];
+    dst_stride0 = Tdst->stride[2];
+    dst_depth = Tdst->size[2];
   }
 
-  src_stride0 = 0;
-  src_stride1 = Tsrc->stride[Tsrc->nDimension-2];
-  src_stride2 = Tsrc->stride[Tsrc->nDimension-1];
+  src_stride0 = Tsrc->stride[0];
+  src_stride1 = Tsrc->stride[1];
+	src_stride2 = 0;
+  src_height = Tsrc->size[0];
+  src_width = Tsrc->size[1];
   src_depth =  0;
-  src_height = Tsrc->size[Tsrc->nDimension-2];
-  src_width = Tsrc->size[Tsrc->nDimension-1];
   if(Tsrc->nDimension == 3) {
-    src_stride0 = Tsrc->stride[0];
-    src_depth = Tsrc->size[0];
+    src_stride2 = Tsrc->stride[2];
+    src_depth = Tsrc->size[2];
   }
 
   if( (Tdst->nDimension==3 && ( src_depth!=dst_depth)) ||
       (Tdst->nDimension!=Tsrc->nDimension) ) {
-    printf("image.scale:%d,%d,%ld,%ld\n",Tsrc->nDimension,Tdst->nDimension,src_depth,dst_depth);
-    printf("image.scale: src and dst depths do not match\n");
+    printf("image.scaleSimple:%d,%d,%ld,%ld\n",Tsrc->nDimension,Tdst->nDimension,src_depth,dst_depth);
+    printf("image.scaleSimple: src and dst depths do not match\n");
     exit(0);
   }
 
@@ -389,15 +389,15 @@ int image_(Main_scaleSimple)(THTensor *Tsrc, THTensor *Tdst)
 
       if(Tsrc->nDimension==2)
         {
-          val=src[ii*src_stride2+jj*src_stride1];
-          dst[i*dst_stride2+j*dst_stride1] = image_(FromIntermediate)(val);
+          val=src[ii*src_stride1+jj*src_stride0];
+          dst[i*dst_stride1+j*dst_stride0] = image_(FromIntermediate)(val);
         }
       else
         {
           for(k=0;k<src_depth;k++)
             {
-              val=src[ii*src_stride2+jj*src_stride1+k*src_stride0];
-              dst[i*dst_stride2+j*dst_stride1+k*dst_stride0] = image_(FromIntermediate)(val);
+              val=src[ii*src_stride1+jj*src_stride0+k*src_stride2];
+              dst[i*dst_stride1+j*dst_stride0+k*dst_stride2] = image_(FromIntermediate)(val);
             }
         }
     }
@@ -417,11 +417,11 @@ int image_(Main_rotate)(THTensor *Tsrc, THTensor *Tdst, float theta)
   long ii,jj;
 
   if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
-		printf("rotate: src not 2 or 3 dimensional\n");
+		printf("image.rotate: src not 2 or 3 dimensional\n");
 		exit(0);
 	}
   if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
-  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	printf("image.rotate: dst not 2 or 3 dimensional\n");
   	exit(0);
   }
   src= THTensor_(data)(Tsrc);
@@ -432,26 +432,26 @@ int image_(Main_rotate)(THTensor *Tsrc, THTensor *Tdst, float theta)
     exit(0);
   }
 
-  dst_stride0 = 0;
-  dst_stride1 = Tdst->stride[Tdst->nDimension-2];
-  dst_stride2 = Tdst->stride[Tdst->nDimension-1];
+  dst_stride0 = Tdst->stride[0];
+  dst_stride1 = Tdst->stride[1];
+  dst_stride2 = 0;
+  dst_height = Tdst->size[0];
+  dst_width = Tdst->size[1];
   dst_depth =  0;
-  dst_height = Tdst->size[Tdst->nDimension-2];
-  dst_width = Tdst->size[Tdst->nDimension-1];
   if(Tdst->nDimension == 3) {
-    dst_stride0 = Tdst->stride[0];
-    dst_depth = Tdst->size[0];
+    dst_stride2 = Tdst->stride[2];
+    dst_depth = Tdst->size[2];
   }
 
-  src_stride0 = 0;
-  src_stride1 = Tsrc->stride[Tsrc->nDimension-2];
-  src_stride2 = Tsrc->stride[Tsrc->nDimension-1];
+  src_stride0 = Tsrc->stride[0];
+  src_stride1 = Tsrc->stride[1];
+	src_stride2 = 0;
+  src_height = Tsrc->size[0];
+  src_width = Tsrc->size[1];
   src_depth =  0;
-  src_height = Tsrc->size[Tsrc->nDimension-2];
-  src_width = Tsrc->size[Tsrc->nDimension-1];
   if(Tsrc->nDimension == 3) {
-    src_stride0 = Tsrc->stride[0];
-    src_depth = Tsrc->size[0];
+    src_stride2 = Tsrc->stride[2];
+    src_depth = Tsrc->size[2];
   }
 
   if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) )	{
@@ -488,8 +488,8 @@ int image_(Main_rotate)(THTensor *Tsrc, THTensor *Tdst, float theta)
       if(Tsrc->nDimension==2)
         {
           if(val==-1)
-            val=src[ii*src_stride2+jj*src_stride1];
-          dst[i*dst_stride2+j*dst_stride1] = image_(FromIntermediate)(val);
+            val=src[ii*src_stride1+jj*src_stride0];
+          dst[i*dst_stride1+j*dst_stride0] = image_(FromIntermediate)(val);
         }
       else
         {
@@ -497,14 +497,15 @@ int image_(Main_rotate)(THTensor *Tsrc, THTensor *Tdst, float theta)
           for(k=0;k<src_depth;k++)
             {
               if(do_copy)
-                val=src[ii*src_stride2+jj*src_stride1+k*src_stride0];
-              dst[i*dst_stride2+j*dst_stride1+k*dst_stride0] = image_(FromIntermediate)(val);
+                val=src[ii*src_stride1+jj*src_stride0+k*src_stride2];
+              dst[i*dst_stride1+j*dst_stride0+k*dst_stride2] = image_(FromIntermediate)(val);
             }
         }
     }
   }
   return 0;
 }
+
 int image_(Main_rotateBilinear)(THTensor *Tsrc, THTensor *Tdst, float theta)
 {
  real *src, *dst;
@@ -516,50 +517,50 @@ int image_(Main_rotateBilinear)(THTensor *Tsrc, THTensor *Tdst, float theta)
   long ii_0, ii_1, jj_0, jj_1;
 
   if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
-		printf("rotate: src not 2 or 3 dimensional\n");
+		printf("image.rotateBilinear: src not 2 or 3 dimensional\n");
 		exit(0);
 	}
   if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
-  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	printf("image.rotateBilinear: dst not 2 or 3 dimensional\n");
   	exit(0);
   }
   src= THTensor_(data)(Tsrc);
   dst= THTensor_(data)(Tdst);
 
   if (dst == src) {
-    printf("image.rotate: in-place rotate not supported\n");
+    printf("image.rotateBilinear: in-place rotate not supported\n");
     exit(0);
   }
 
-  dst_stride0 = 0;
-  dst_stride1 = Tdst->stride[Tdst->nDimension-2];
-  dst_stride2 = Tdst->stride[Tdst->nDimension-1];
+  dst_stride0 = Tdst->stride[0];
+  dst_stride1 = Tdst->stride[1];
+  dst_stride2 = 0;
+  dst_height = Tdst->size[0];
+  dst_width = Tdst->size[1];
   dst_depth =  0;
-  dst_height = Tdst->size[Tdst->nDimension-2];
-  dst_width = Tdst->size[Tdst->nDimension-1];
   if(Tdst->nDimension == 3) {
-    dst_stride0 = Tdst->stride[0];
-    dst_depth = Tdst->size[0];
+    dst_stride2 = Tdst->stride[2];
+    dst_depth = Tdst->size[2];
   }
 
-  src_stride0 = 0;
-  src_stride1 = Tsrc->stride[Tsrc->nDimension-2];
-  src_stride2 = Tsrc->stride[Tsrc->nDimension-1];
+  src_stride0 = Tsrc->stride[0];
+  src_stride1 = Tsrc->stride[1];
+	src_stride2 = 0;
+  src_height = Tsrc->size[0];
+  src_width = Tsrc->size[1];
   src_depth =  0;
-  src_height = Tsrc->size[Tsrc->nDimension-2];
-  src_width = Tsrc->size[Tsrc->nDimension-1];
   if(Tsrc->nDimension == 3) {
-    src_stride0 = Tsrc->stride[0];
-    src_depth = Tsrc->size[0];
+    src_stride2 = Tsrc->stride[2];
+    src_depth = Tsrc->size[2];
   }
 
   if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
-    printf("image.rotate: src and dst depths do not match\n");
+    printf("image.rotateBilinear: src and dst depths do not match\n");
     exit(0);
   }
 
   if( (Tsrc->nDimension!=Tdst->nDimension) ) {
-    printf("image.rotate: src and dst depths do not match\n");
+    printf("image.rotateBilinear: src and dst depths do not match\n");
     exit(0);
   }  
 
@@ -594,21 +595,21 @@ int image_(Main_rotateBilinear)(THTensor *Tsrc, THTensor *Tdst, float theta)
 
       if(Tsrc->nDimension==2) {
         if(val==-1)
-          val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride2+jj_0*src_stride1]
-            + wi * (1.0 - wj) * src[ii_1*src_stride2+jj_0*src_stride1]
-            + (1.0 - wi) * wj * src[ii_0*src_stride2+jj_1*src_stride1]
-            + wi * wj * src[ii_1*src_stride2+jj_1*src_stride1];
-        dst[i*dst_stride2+j*dst_stride1] = image_(FromIntermediate)(val);
+          val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride1+jj_0*src_stride0]
+            + wi * (1.0 - wj) * src[ii_1*src_stride1+jj_0*src_stride0]
+            + (1.0 - wi) * wj * src[ii_0*src_stride1+jj_1*src_stride0]
+            + wi * wj * src[ii_1*src_stride1+jj_1*src_stride0];
+        dst[i*dst_stride1+j*dst_stride0] = image_(FromIntermediate)(val);
       } else {
         int do_copy=0; if(val==-1) do_copy=1;
         for(k=0;k<src_depth;k++) {
           if(do_copy) {
-            val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride2+jj_0*src_stride1+k*src_stride0]
-              + wi * (1.0 - wj) * src[ii_1*src_stride2+jj_0*src_stride1+k*src_stride0]
-              + (1.0 - wi) * wj * src[ii_0*src_stride2+jj_1*src_stride1+k*src_stride0]
-              + wi * wj * src[ii_1*src_stride2+jj_1*src_stride1+k*src_stride0];
+            val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride1+jj_0*src_stride0+k*src_stride2]
+              + wi * (1.0 - wj) * src[ii_1*src_stride1+jj_0*src_stride0+k*src_stride2]
+              + (1.0 - wi) * wj * src[ii_0*src_stride1+jj_1*src_stride0+k*src_stride2]
+              + wi * wj * src[ii_1*src_stride1+jj_1*src_stride0+k*src_stride2];
           }
-          dst[i*dst_stride2+j*dst_stride1+k*dst_stride0] = image_(FromIntermediate)(val);
+          dst[i*dst_stride1+j*dst_stride0+k*dst_stride2] = image_(FromIntermediate)(val);
         }
       }
     }
@@ -625,38 +626,40 @@ int image_(Main_polar)(THTensor *Tsrc, THTensor *Tdst, int doFull)
     float id, jd, a, r, m, midY, midX;
     long ii,jj;
 
-  if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
-		printf("rotate: src not 2 or 3 dimensional\n");
-		exit(0);
-	}
-  if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
-  	printf("rotate: dst not 2 or 3 dimensional\n");
-  	exit(0);
-  }
-    src= THTensor_(data)(Tsrc);
-    dst= THTensor_(data)(Tdst);
+		if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
+			printf("image.polar: src not 2 or 3 dimensional\n");
+			exit(0);
+		}
+		if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
+			printf("image.polar: dst not 2 or 3 dimensional\n");
+			exit(0);
+		}
+		
+		src= THTensor_(data)(Tsrc);
+		dst= THTensor_(data)(Tdst);
 
-    dst_stride0 = 0;
-    dst_stride1 = Tdst->stride[Tdst->nDimension-2];
-    dst_stride2 = Tdst->stride[Tdst->nDimension-1];
-    dst_depth =  0;
-    dst_height = Tdst->size[Tdst->nDimension-2];
-    dst_width = Tdst->size[Tdst->nDimension-1];
-    if(Tdst->nDimension == 3) {
-        dst_stride0 = Tdst->stride[0];
-        dst_depth = Tdst->size[0];
-    }
+		dst_stride0 = Tdst->stride[0];
+		dst_stride1 = Tdst->stride[1];
+		dst_stride2 = 0;
+		dst_height = Tdst->size[0];
+		dst_width = Tdst->size[1];
+		dst_depth =  0;
+		if(Tdst->nDimension == 3) {
+		  dst_stride2 = Tdst->stride[2];
+		  dst_depth = Tdst->size[2];
+		}
 
-    src_stride0 = 0;
-    src_stride1 = Tsrc->stride[Tsrc->nDimension-2];
-    src_stride2 = Tsrc->stride[Tsrc->nDimension-1];
-    src_depth =  0;
-    src_height = Tsrc->size[Tsrc->nDimension-2];
-    src_width = Tsrc->size[Tsrc->nDimension-1];
-    if(Tsrc->nDimension == 3) {
-        src_stride0 = Tsrc->stride[0];
-        src_depth = Tsrc->size[0];
-    }
+		src_stride0 = Tsrc->stride[0];
+		src_stride1 = Tsrc->stride[1];
+		src_stride2 = 0;
+		src_height = Tsrc->size[0];
+		src_width = Tsrc->size[1];
+		src_depth =  0;
+		if(Tsrc->nDimension == 3) {
+		  src_stride2 = Tsrc->stride[2];
+		  src_depth = Tsrc->size[2];
+		}
+
 
     if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
         printf("image.polar: src and dst depths do not match\n"); 
@@ -698,8 +701,8 @@ int image_(Main_polar)(THTensor *Tsrc, THTensor *Tdst, int doFull)
             if(Tsrc->nDimension==2)
             {
                 if(val==-1)
-                    val=src[ii*src_stride2+jj*src_stride1];
-                dst[i*dst_stride2+j*dst_stride1] = image_(FromIntermediate)(val);
+                    val=src[ii*src_stride1+jj*src_stride0];
+                dst[i*dst_stride1+j*dst_stride0] = image_(FromIntermediate)(val);
             }
             else
             {
@@ -707,8 +710,8 @@ int image_(Main_polar)(THTensor *Tsrc, THTensor *Tdst, int doFull)
                 for(k=0;k<src_depth;k++)
                 {
                     if(do_copy)
-                        val=src[ii*src_stride2+jj*src_stride1+k*src_stride0];
-                    dst[i*dst_stride2+j*dst_stride1+k*dst_stride0] = image_(FromIntermediate)(val);
+                        val=src[ii*src_stride1+jj*src_stride0+k*src_stride2];
+                    dst[i*dst_stride1+j*dst_stride0+k*dst_stride2] = image_(FromIntermediate)(val);
                 }
             }
         }
@@ -725,46 +728,46 @@ int image_(Main_polarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull)
     long ii_0, ii_1, jj_0, jj_1;
 
     if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
-        printf("rotate: src not 2 or 3 dimensional\n");
+        printf("image.polarBilinear: src not 2 or 3 dimensional\n");
         exit(0);
     }
     if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
-        printf("rotate: dst not 2 or 3 dimensional\n");
+        printf("image.polarBilinear: dst not 2 or 3 dimensional\n");
         exit(0);
     }
 
     src= THTensor_(data)(Tsrc);
     dst= THTensor_(data)(Tdst);
 
-    dst_stride0 = 0;
-    dst_stride1 = Tdst->stride[Tdst->nDimension-2];
-    dst_stride2 = Tdst->stride[Tdst->nDimension-1];
-    dst_depth =  0;
-    dst_height = Tdst->size[Tdst->nDimension-2];
-    dst_width = Tdst->size[Tdst->nDimension-1];
-    if(Tdst->nDimension == 3) {
-        dst_stride0 = Tdst->stride[0];
-        dst_depth = Tdst->size[0];
-    }
+		dst_stride0 = Tdst->stride[0];
+		dst_stride1 = Tdst->stride[1];
+		dst_stride2 = 0;
+		dst_height = Tdst->size[0];
+		dst_width = Tdst->size[1];
+		dst_depth =  0;
+		if(Tdst->nDimension == 3) {
+		  dst_stride2 = Tdst->stride[2];
+		  dst_depth = Tdst->size[2];
+		}
 
-    src_stride0 = 0;
-    src_stride1 = Tsrc->stride[Tsrc->nDimension-2];
-    src_stride2 = Tsrc->stride[Tsrc->nDimension-1];
-    src_depth =  0;
-    src_height = Tsrc->size[Tsrc->nDimension-2];
-    src_width = Tsrc->size[Tsrc->nDimension-1];
-    if(Tsrc->nDimension == 3) {
-        src_stride0 = Tsrc->stride[0];
-        src_depth = Tsrc->size[0];
-    }
+		src_stride0 = Tsrc->stride[0];
+		src_stride1 = Tsrc->stride[1];
+		src_stride2 = 0;
+		src_height = Tsrc->size[0];
+		src_width = Tsrc->size[1];
+		src_depth =  0;
+		if(Tsrc->nDimension == 3) {
+		  src_stride2 = Tsrc->stride[2];
+		  src_depth = Tsrc->size[2];
+		}
 
     if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
-        printf("image.polar: src and dst depths do not match\n"); 
+        printf("image.polarBilinear: src and dst depths do not match\n"); 
         exit(0);
     }
 
     if( (Tsrc->nDimension!=Tdst->nDimension) ) {
-        printf("image.polar: src and dst depths do not match\n"); 
+        printf("image.polarBilinear: src and dst depths do not match\n"); 
         exit(0);
     }
 
@@ -808,8 +811,8 @@ int image_(Main_polarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull)
                 if(Tsrc->nDimension==2)
                 {
                     if(val==-1)
-                        val=src[ii_0*src_stride2+jj_0*src_stride1];
-                    dst[i*dst_stride2+j*dst_stride1] = image_(FromIntermediate)(val);
+                        val=src[ii_0*src_stride1+jj_0*src_stride0];
+                    dst[i*dst_stride1+j*dst_stride0] = image_(FromIntermediate)(val);
                 }
                 else
                 {
@@ -817,8 +820,8 @@ int image_(Main_polarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull)
                     for(k=0;k<src_depth;k++)
                     {
                         if(do_copy)
-                            val=src[ii_0*src_stride2+jj_0*src_stride1+k*src_stride0];
-                        dst[i*dst_stride2+j*dst_stride1+k*dst_stride0] = image_(FromIntermediate)(val);
+                            val=src[ii_0*src_stride1+jj_0*src_stride0+k*src_stride2];
+                        dst[i*dst_stride1+j*dst_stride0+k*dst_stride2] = image_(FromIntermediate)(val);
                     }
                 }
             }
@@ -827,21 +830,21 @@ int image_(Main_polarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull)
             else {
                 if(Tsrc->nDimension==2) {
                     if(val==-1)
-                        val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride2+jj_0*src_stride1]
-                        + wi * (1.0 - wj) * src[ii_1*src_stride2+jj_0*src_stride1]
-                        + (1.0 - wi) * wj * src[ii_0*src_stride2+jj_1*src_stride1]
-                        + wi * wj * src[ii_1*src_stride2+jj_1*src_stride1];
-                    dst[i*dst_stride2+j*dst_stride1] = image_(FromIntermediate)(val);
+                        val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride1+jj_0*src_stride0]
+                        + wi * (1.0 - wj) * src[ii_1*src_stride1+jj_0*src_stride0]
+                        + (1.0 - wi) * wj * src[ii_0*src_stride1+jj_1*src_stride0]
+                        + wi * wj * src[ii_1*src_stride1+jj_1*src_stride0];
+                    dst[i*dst_stride1+j*dst_stride0] = image_(FromIntermediate)(val);
                 } else {
                     int do_copy=0; if(val==-1) do_copy=1;
                     for(k=0;k<src_depth;k++) {
                         if(do_copy) {
-                            val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride2+jj_0*src_stride1+k*src_stride0]
-                            + wi * (1.0 - wj) * src[ii_1*src_stride2+jj_0*src_stride1+k*src_stride0]
-                            + (1.0 - wi) * wj * src[ii_0*src_stride2+jj_1*src_stride1+k*src_stride0]
-                            + wi * wj * src[ii_1*src_stride2+jj_1*src_stride1+k*src_stride0];
+                            val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride1+jj_0*src_stride0+k*src_stride2]
+                            + wi * (1.0 - wj) * src[ii_1*src_stride1+jj_0*src_stride0+k*src_stride2]
+                            + (1.0 - wi) * wj * src[ii_0*src_stride1+jj_1*src_stride0+k*src_stride2]
+                            + wi * wj * src[ii_1*src_stride1+jj_1*src_stride0+k*src_stride2];
                         }
-                        dst[i*dst_stride2+j*dst_stride1+k*dst_stride0] = image_(FromIntermediate)(val);
+                        dst[i*dst_stride1+j*dst_stride0+k*dst_stride2] = image_(FromIntermediate)(val);
                     }
                 }
             }
@@ -860,46 +863,46 @@ int image_(Main_logPolar)(THTensor *Tsrc, THTensor *Tdst, int doFull)
     long ii,jj;
 
     if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
-	    printf("rotate: src not 2 or 3 dimensional\n");
+	    printf("image.logPolar: src not 2 or 3 dimensional\n");
 	    exit(0);
     }
     if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
-        printf("rotate: dst not 2 or 3 dimensional\n");
+        printf("image.logPolar: dst not 2 or 3 dimensional\n");
         exit(0);
     } 
 		
     src= THTensor_(data)(Tsrc);
     dst= THTensor_(data)(Tdst);
 
-    dst_stride0 = 0;
-    dst_stride1 = Tdst->stride[Tdst->nDimension-2];
-    dst_stride2 = Tdst->stride[Tdst->nDimension-1];
-    dst_depth =  0;
-    dst_height = Tdst->size[Tdst->nDimension-2];
-    dst_width = Tdst->size[Tdst->nDimension-1];
-    if(Tdst->nDimension == 3) {
-        dst_stride0 = Tdst->stride[0];
-        dst_depth = Tdst->size[0];
-    }
+		dst_stride0 = Tdst->stride[0];
+		dst_stride1 = Tdst->stride[1];
+		dst_stride2 = 0;
+		dst_height = Tdst->size[0];
+		dst_width = Tdst->size[1];
+		dst_depth =  0;
+		if(Tdst->nDimension == 3) {
+		  dst_stride2 = Tdst->stride[2];
+		  dst_depth = Tdst->size[2];
+		}
 
-    src_stride0 = 0;
-    src_stride1 = Tsrc->stride[Tsrc->nDimension-2];
-    src_stride2 = Tsrc->stride[Tsrc->nDimension-1];
-    src_depth =  0;
-    src_height = Tsrc->size[Tsrc->nDimension-2];
-    src_width = Tsrc->size[Tsrc->nDimension-1];
-    if(Tsrc->nDimension == 3) {
-        src_stride0 = Tsrc->stride[0];
-        src_depth = Tsrc->size[0];
-    }
+		src_stride0 = Tsrc->stride[0];
+		src_stride1 = Tsrc->stride[1];
+		src_stride2 = 0;
+		src_height = Tsrc->size[0];
+		src_width = Tsrc->size[1];
+		src_depth =  0;
+		if(Tsrc->nDimension == 3) {
+		  src_stride2 = Tsrc->stride[2];
+		  src_depth = Tsrc->size[2];
+		}
 
     if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
-        printf("image.polar: src and dst depths do not match\n"); 
+        printf("image.logPolar: src and dst depths do not match\n"); 
         exit(0);
     }
 
     if( (Tsrc->nDimension!=Tdst->nDimension) ) {
-        printf("image.polar: src and dst depths do not match\n"); 
+        printf("image.logPolar: src and dst depths do not match\n"); 
         exit(0);
     }
 
@@ -935,8 +938,8 @@ int image_(Main_logPolar)(THTensor *Tsrc, THTensor *Tdst, int doFull)
             if(Tsrc->nDimension==2)
             {
                 if(val==-1)
-                    val=src[ii*src_stride2+jj*src_stride1];
-                dst[i*dst_stride2+j*dst_stride1] = image_(FromIntermediate)(val);
+                    val=src[ii*src_stride1+jj*src_stride0];
+                dst[i*dst_stride1+j*dst_stride0] = image_(FromIntermediate)(val);
             }
             else
             {
@@ -944,8 +947,8 @@ int image_(Main_logPolar)(THTensor *Tsrc, THTensor *Tdst, int doFull)
                 for(k=0;k<src_depth;k++)
                 {
                     if(do_copy)
-                        val=src[ii*src_stride2+jj*src_stride1+k*src_stride0];
-                    dst[i*dst_stride2+j*dst_stride1+k*dst_stride0] = image_(FromIntermediate)(val);
+                        val=src[ii*src_stride1+jj*src_stride0+k*src_stride2];
+                    dst[i*dst_stride1+j*dst_stride0+k*dst_stride2] = image_(FromIntermediate)(val);
                 }
             }
         }
@@ -962,45 +965,45 @@ int image_(Main_logPolarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull)
     long ii_0, ii_1, jj_0, jj_1;
 
     if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
-        printf("rotate: src not 2 or 3 dimensional\n");
+        printf("image.logPolarBilinear: src not 2 or 3 dimensional\n");
         exit(0);
     }
     if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
-        printf("rotate: dst not 2 or 3 dimensional\n");
+        printf("image.logPolarBilinear: dst not 2 or 3 dimensional\n");
         exit(0);
     }
     src= THTensor_(data)(Tsrc);
     dst= THTensor_(data)(Tdst);
 
-    dst_stride0 = 0;
-    dst_stride1 = Tdst->stride[Tdst->nDimension-2];
-    dst_stride2 = Tdst->stride[Tdst->nDimension-1];
-    dst_depth =  0;
-    dst_height = Tdst->size[Tdst->nDimension-2];
-    dst_width = Tdst->size[Tdst->nDimension-1];
-    if(Tdst->nDimension == 3) {
-        dst_stride0 = Tdst->stride[0];
-        dst_depth = Tdst->size[0];
-    }
+		dst_stride0 = Tdst->stride[0];
+		dst_stride1 = Tdst->stride[1];
+		dst_stride2 = 0;
+		dst_height = Tdst->size[0];
+		dst_width = Tdst->size[1];
+		dst_depth =  0;
+		if(Tdst->nDimension == 3) {
+		  dst_stride2 = Tdst->stride[2];
+		  dst_depth = Tdst->size[2];
+		}
 
-    src_stride0 = 0;
-    src_stride1 = Tsrc->stride[Tsrc->nDimension-2];
-    src_stride2 = Tsrc->stride[Tsrc->nDimension-1];
-    src_depth =  0;
-    src_height = Tsrc->size[Tsrc->nDimension-2];
-    src_width = Tsrc->size[Tsrc->nDimension-1];
-    if(Tsrc->nDimension == 3) {
-        src_stride0 = Tsrc->stride[0];
-        src_depth = Tsrc->size[0];
-    }
+		src_stride0 = Tsrc->stride[0];
+		src_stride1 = Tsrc->stride[1];
+		src_stride2 = 0;
+		src_height = Tsrc->size[0];
+		src_width = Tsrc->size[1];
+		src_depth =  0;
+		if(Tsrc->nDimension == 3) {
+		  src_stride2 = Tsrc->stride[2];
+		  src_depth = Tsrc->size[2];
+		}
 
     if( Tsrc->nDimension==3 && Tdst->nDimension==3 && ( src_depth!=dst_depth) ) {
-        printf("image.polar: src and dst depths do not match\n"); 
+        printf("image.logPolarBilinear: src and dst depths do not match\n"); 
         exit(0);
     }
 
     if( (Tsrc->nDimension!=Tdst->nDimension) ) {
-        printf("image.polar: src and dst depths do not match\n"); 
+        printf("image.logPolarBilinear: src and dst depths do not match\n"); 
         exit(0);
     }
 
@@ -1046,8 +1049,8 @@ int image_(Main_logPolarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull)
                 if(Tsrc->nDimension==2)
                 {
                     if(val==-1)
-                        val=src[ii_0*src_stride2+jj_0*src_stride1];
-                    dst[i*dst_stride2+j*dst_stride1] = image_(FromIntermediate)(val);
+                        val=src[ii_0*src_stride1+jj_0*src_stride0];
+                    dst[i*dst_stride1+j*dst_stride0] = image_(FromIntermediate)(val);
                 }
                 else
                 {
@@ -1055,8 +1058,8 @@ int image_(Main_logPolarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull)
                     for(k=0;k<src_depth;k++)
                     {
                         if(do_copy)
-                            val=src[ii_0*src_stride2+jj_0*src_stride1+k*src_stride0];
-                        dst[i*dst_stride2+j*dst_stride1+k*dst_stride0] = image_(FromIntermediate)(val);
+                            val=src[ii_0*src_stride1+jj_0*src_stride0+k*src_stride2];
+                        dst[i*dst_stride1+j*dst_stride0+k*dst_stride2] = image_(FromIntermediate)(val);
                     }
                 }
             }
@@ -1065,21 +1068,21 @@ int image_(Main_logPolarBilinear)(THTensor *Tsrc, THTensor *Tdst, int doFull)
             else {
                 if(Tsrc->nDimension==2) {
                     if(val==-1)
-                        val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride2+jj_0*src_stride1]
-                        + wi * (1.0 - wj) * src[ii_1*src_stride2+jj_0*src_stride1]
-                        + (1.0 - wi) * wj * src[ii_0*src_stride2+jj_1*src_stride1]
-                        + wi * wj * src[ii_1*src_stride2+jj_1*src_stride1];
-                    dst[i*dst_stride2+j*dst_stride1] = image_(FromIntermediate)(val);
+                        val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride1+jj_0*src_stride0]
+                        + wi * (1.0 - wj) * src[ii_1*src_stride1+jj_0*src_stride0]
+                        + (1.0 - wi) * wj * src[ii_0*src_stride1+jj_1*src_stride0]
+                        + wi * wj * src[ii_1*src_stride1+jj_1*src_stride0];
+                    dst[i*dst_stride1+j*dst_stride0] = image_(FromIntermediate)(val);
                 } else {
                     int do_copy=0; if(val==-1) do_copy=1;
                     for(k=0;k<src_depth;k++) {
                         if(do_copy) {
-                            val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride2+jj_0*src_stride1+k*src_stride0]
-                            + wi * (1.0 - wj) * src[ii_1*src_stride2+jj_0*src_stride1+k*src_stride0]
-                            + (1.0 - wi) * wj * src[ii_0*src_stride2+jj_1*src_stride1+k*src_stride0]
-                            + wi * wj * src[ii_1*src_stride2+jj_1*src_stride1+k*src_stride0];
+                            val = (1.0 - wi) * (1.0 - wj) * src[ii_0*src_stride1+jj_0*src_stride0+k*src_stride2]
+                            + wi * (1.0 - wj) * src[ii_1*src_stride1+jj_0*src_stride0+k*src_stride2]
+                            + (1.0 - wi) * wj * src[ii_0*src_stride1+jj_1*src_stride0+k*src_stride2]
+                            + wi * wj * src[ii_1*src_stride1+jj_1*src_stride0+k*src_stride2];
                         }
-                        dst[i*dst_stride2+j*dst_stride1+k*dst_stride0] = image_(FromIntermediate)(val);
+                        dst[i*dst_stride1+j*dst_stride0+k*dst_stride2] = image_(FromIntermediate)(val);
                     }
                 }
             }
@@ -1097,45 +1100,45 @@ int image_(Main_cropNoScale)(THTensor *Tsrc, THTensor *Tdst, long startx, long s
   long i, j, k;
 
   if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
-		printf("rotate: src not 2 or 3 dimensional\n");
+		printf("image.cropNoScale: src not 2 or 3 dimensional\n");
 		exit(0);
 	}
   if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
-  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	printf("image.cropNoScale: dst not 2 or 3 dimensional\n");
   	exit(0);
   }
   src= THTensor_(data)(Tsrc);
   dst= THTensor_(data)(Tdst);
 
-  dst_stride0 = 0;
-  dst_stride1 = Tdst->stride[Tdst->nDimension-2];
-  dst_stride2 = Tdst->stride[Tdst->nDimension-1];
+  dst_stride0 = Tdst->stride[0];
+  dst_stride1 = Tdst->stride[1];
+  dst_stride2 = 0;
+  dst_height = Tdst->size[0];
+  dst_width = Tdst->size[1];
   dst_depth =  0;
-  dst_height = Tdst->size[Tdst->nDimension-2];
-  dst_width = Tdst->size[Tdst->nDimension-1];
   if(Tdst->nDimension == 3) {
-    dst_stride0 = Tdst->stride[0];
-    dst_depth = Tdst->size[0];
+    dst_stride2 = Tdst->stride[2];
+    dst_depth = Tdst->size[2];
   }
 
-  src_stride0 = 0;
-  src_stride1 = Tsrc->stride[Tsrc->nDimension-2];
-  src_stride2 = Tsrc->stride[Tsrc->nDimension-1];
+  src_stride0 = Tsrc->stride[0];
+  src_stride1 = Tsrc->stride[1];
+	src_stride2 = 0;
+  src_height = Tsrc->size[0];
+  src_width = Tsrc->size[1];
   src_depth =  0;
-  src_height = Tsrc->size[Tsrc->nDimension-2];
-  src_width = Tsrc->size[Tsrc->nDimension-1];
   if(Tsrc->nDimension == 3) {
-    src_stride0 = Tsrc->stride[0];
-    src_depth = Tsrc->size[0];
+    src_stride2 = Tsrc->stride[2];
+    src_depth = Tsrc->size[2];
   }
-
+	
   if( startx<0 || starty<0 || (startx+dst_width>src_width) || (starty+dst_height>src_height)) {
-  	printf("image.crop: crop goes outside bounds of src\n");
+  	printf("image.cropNoScale: crop goes outside bounds of src\n");
   	exit(0);
   }
 
   if( Tdst->nDimension==3 && ( src_depth!=dst_depth) )	{
-    printf("image.crop: src and dst depths do not match\n");
+    printf("image.cropNoScale: src and dst depths do not match\n");
     exit(0);
   }
 
@@ -1148,15 +1151,15 @@ int image_(Main_cropNoScale)(THTensor *Tsrc, THTensor *Tdst, long startx, long s
 
       if(Tsrc->nDimension==2)
         {
-          val=src[ii*src_stride2+jj*src_stride1];
-          dst[i*dst_stride2+j*dst_stride1] = image_(FromIntermediate)(val);
+          val=src[ii*src_stride1+jj*src_stride0];
+          dst[i*dst_stride1+j*dst_stride0] = image_(FromIntermediate)(val);
         }
       else
         {
           for(k=0;k<src_depth;k++)
             {
-              val=src[ii*src_stride2+jj*src_stride1+k*src_stride0];
-              dst[i*dst_stride2+j*dst_stride1+k*dst_stride0] = image_(FromIntermediate)(val);
+              val=src[ii*src_stride1+jj*src_stride0+k*src_stride2];
+              dst[i*dst_stride1+j*dst_stride0+k*dst_stride2] = image_(FromIntermediate)(val);
             }
         }
     }
@@ -1172,36 +1175,36 @@ int image_(Main_translate)(THTensor *Tsrc, THTensor *Tdst, long shiftx, long shi
   long i, j, k;
 
   if (Tsrc->nDimension!=2 && Tsrc->nDimension!=3) {
-		printf("rotate: src not 2 or 3 dimensional\n");
+		printf("image.translate: src not 2 or 3 dimensional\n");
 		exit(0);
 	}
   if (Tdst->nDimension!=2 && Tdst->nDimension!=3) {
-  	printf("rotate: dst not 2 or 3 dimensional\n");
+  	printf("image.translate: dst not 2 or 3 dimensional\n");
   	exit(0);
   } 
   src= THTensor_(data)(Tsrc);
   dst= THTensor_(data)(Tdst);
 
-  dst_stride0 = 1;
-  dst_stride1 = Tdst->stride[Tdst->nDimension-2];
-  dst_stride2 = Tdst->stride[Tdst->nDimension-1];
+  dst_stride0 = Tdst->stride[0];
+  dst_stride1 = Tdst->stride[1];
+  dst_stride2 = 1;
+  dst_height = Tdst->size[0];
+  dst_width = Tdst->size[1];
   dst_depth =  1;
-  dst_height = Tdst->size[Tdst->nDimension-2];
-  dst_width = Tdst->size[Tdst->nDimension-1];
   if(Tdst->nDimension == 3) {
-    dst_stride0 = Tdst->stride[0];
-    dst_depth = Tdst->size[0];
+    dst_stride2 = Tdst->stride[2];
+    dst_depth = Tdst->size[2];
   }
 
-  src_stride0 = 1;
-  src_stride1 = Tsrc->stride[Tsrc->nDimension-2];
-  src_stride2 = Tsrc->stride[Tsrc->nDimension-1];
+  src_stride0 = Tsrc->stride[0];
+  src_stride1 = Tsrc->stride[1];
+	src_stride2 = 1;
+  src_height = Tsrc->size[0];
+  src_width = Tsrc->size[1];
   src_depth =  1;
-  src_height = Tsrc->size[Tsrc->nDimension-2];
-  src_width = Tsrc->size[Tsrc->nDimension-1];
   if(Tsrc->nDimension == 3) {
-    src_stride0 = Tsrc->stride[0];
-    src_depth = Tsrc->size[0];
+    src_stride2 = Tsrc->stride[2];
+    src_depth = Tsrc->size[2];
   }
 
   if( Tdst->nDimension==3 && ( src_depth!=dst_depth) )  {
@@ -1217,7 +1220,7 @@ int image_(Main_translate)(THTensor *Tsrc, THTensor *Tdst, long shiftx, long shi
       // Check it's within destination bounds, else crop
       if(ii<dst_width && jj<dst_height && ii>=0 && jj>=0) {
         for(k=0;k<src_depth;k++) {
-          dst[ii*dst_stride2+jj*dst_stride1+k*dst_stride0] = src[i*src_stride2+j*src_stride1+k*src_stride0];
+          dst[ii*dst_stride1+jj*dst_stride0+k*dst_stride2] = src[i*src_stride1+j*src_stride0+k*src_stride2];
         }
       }
     }
@@ -1246,18 +1249,17 @@ int image_(Main_saturate)(THTensor *input) {
 int image_(Main_rgb2hsl)(THTensor *rgb, THTensor *hsl) {
   int y,x;
   temp_t r, g, b, h, s, l;
-  for (y=0; y<rgb->size[1]; y++) {
-    for (x=0; x<rgb->size[2]; x++) {
+  for (y=0; y<rgb->size[0]; y++) {
+    for (x=0; x<rgb->size[1]; x++) {
       // get Rgb
-      r = THTensor_(get3d)(rgb, 0, y, x);
-      g = THTensor_(get3d)(rgb, 1, y, x);
-      b = THTensor_(get3d)(rgb, 2, y, x);
+      r = THTensor_(get3d)(rgb, y, x, 0);
+      g = THTensor_(get3d)(rgb, y, x, 1);
+      b = THTensor_(get3d)(rgb, y, x, 2);
 #ifdef TH_REAL_IS_BYTE
       r /= 255;
       g /= 255;
       b /= 255;
 #endif
-
       temp_t mx = max(max(r, g), b);
       temp_t mn = min(min(r, g), b);
       if(mx == mn) {
@@ -1284,9 +1286,9 @@ int image_(Main_rgb2hsl)(THTensor *rgb, THTensor *hsl) {
       s *= 255;
       l *= 255;
 #endif
-      THTensor_(set3d)(hsl, 0, y, x, image_(FromIntermediate)(h));
-      THTensor_(set3d)(hsl, 1, y, x, image_(FromIntermediate)(s));
-      THTensor_(set3d)(hsl, 2, y, x, image_(FromIntermediate)(l));
+      THTensor_(set3d)(hsl, y, x, 0, image_(FromIntermediate)(h));
+      THTensor_(set3d)(hsl, y, x, 1, image_(FromIntermediate)(s));
+      THTensor_(set3d)(hsl, y, x, 2, image_(FromIntermediate)(l));
     }
   }
   return 0;
@@ -1316,12 +1318,12 @@ int image_(Main_hsl2rgb)(THTensor *hsl, THTensor *rgb) {
   
   int y,x;
   temp_t r, g, b, h, s, l;
-  for (y=0; y<hsl->size[1]; y++) {
-    for (x=0; x<hsl->size[2]; x++) {
+  for (y=0; y<hsl->size[0]; y++) {
+    for (x=0; x<hsl->size[1]; x++) {
       // get hsl
-      h = THTensor_(get3d)(hsl, 0, y, x);
-      s = THTensor_(get3d)(hsl, 1, y, x);
-      l = THTensor_(get3d)(hsl, 2, y, x);
+      h = THTensor_(get3d)(hsl, y, x, 0);
+      s = THTensor_(get3d)(hsl, y, x, 1);
+      l = THTensor_(get3d)(hsl, y, x, 2);
 #ifdef TH_REAL_IS_BYTE
       h /= 255;
       s /= 255;
@@ -1350,9 +1352,9 @@ int image_(Main_hsl2rgb)(THTensor *hsl, THTensor *rgb) {
       g *= 255;
       b *= 255;
 #endif
-      THTensor_(set3d)(rgb, 0, y, x, image_(FromIntermediate)(r));
-      THTensor_(set3d)(rgb, 1, y, x, image_(FromIntermediate)(g));
-      THTensor_(set3d)(rgb, 2, y, x, image_(FromIntermediate)(b));
+      THTensor_(set3d)(rgb, y, x, 0, image_(FromIntermediate)(r));
+      THTensor_(set3d)(rgb, y, x, 1, image_(FromIntermediate)(g));
+      THTensor_(set3d)(rgb, y, x, 2, image_(FromIntermediate)(b));
     }
   }
   return 0;
@@ -1368,12 +1370,12 @@ int image_(Main_rgb2hsv)(THTensor *rgb, THTensor *hsv) {
 
   int y, x;
   temp_t r, g, b, h, s, v;
-  for (y=0; y<rgb->size[1]; y++) {
-    for (x=0; x<rgb->size[2]; x++) {
+  for (y=0; y<rgb->size[0]; y++) {
+    for (x=0; x<rgb->size[1]; x++) {
       // get Rgb
-      r = THTensor_(get3d)(rgb, 0, y, x);
-      g = THTensor_(get3d)(rgb, 1, y, x);
-      b = THTensor_(get3d)(rgb, 2, y, x);
+      r = THTensor_(get3d)(rgb, y, x, 0);
+      g = THTensor_(get3d)(rgb, y, x, 1);
+      b = THTensor_(get3d)(rgb, y, x, 2);
 #ifdef TH_REAL_IS_BYTE
       r /= 255;
       g /= 255;
@@ -1407,9 +1409,9 @@ int image_(Main_rgb2hsv)(THTensor *rgb, THTensor *hsv) {
       s *= 255;
       v *= 255;
 #endif
-      THTensor_(set3d)(hsv, 0, y, x, image_(FromIntermediate)(h));
-      THTensor_(set3d)(hsv, 1, y, x, image_(FromIntermediate)(s));
-      THTensor_(set3d)(hsv, 2, y, x, image_(FromIntermediate)(v));
+      THTensor_(set3d)(hsv, y, x, 0, image_(FromIntermediate)(h));
+      THTensor_(set3d)(hsv, y, x, 1, image_(FromIntermediate)(s));
+      THTensor_(set3d)(hsv, y, x, 2, image_(FromIntermediate)(v));
     }
   }
   return 0;
@@ -1424,12 +1426,12 @@ int image_(Main_rgb2hsv)(THTensor *rgb, THTensor *hsv) {
 int image_(Main_hsv2rgb)(THTensor *hsv, THTensor *rgb) {
   int y, x;
   temp_t r, g, b, h, s, v;
-  for (y=0; y<hsv->size[1]; y++) {
-    for (x=0; x<hsv->size[2]; x++) {
+  for (y=0; y<hsv->size[0]; y++) {
+    for (x=0; x<hsv->size[1]; x++) {
       // get hsv
-      h = THTensor_(get3d)(hsv, 0, y, x);
-      s = THTensor_(get3d)(hsv, 1, y, x);
-      v = THTensor_(get3d)(hsv, 2, y, x);
+      h = THTensor_(get3d)(hsv, y, x, 0);
+      s = THTensor_(get3d)(hsv, y, x, 1);
+      v = THTensor_(get3d)(hsv, y, x, 2);
 #ifdef TH_REAL_IS_BYTE
       h /= 255;
       s /= 255;
@@ -1458,9 +1460,9 @@ int image_(Main_hsv2rgb)(THTensor *hsv, THTensor *rgb) {
       g *= 255;
       b *= 255;
 #endif
-      THTensor_(set3d)(rgb, 0, y, x, image_(FromIntermediate)(r));
-      THTensor_(set3d)(rgb, 1, y, x, image_(FromIntermediate)(g));
-      THTensor_(set3d)(rgb, 2, y, x, image_(FromIntermediate)(b));
+      THTensor_(set3d)(rgb, y, x, 0, image_(FromIntermediate)(r));
+      THTensor_(set3d)(rgb, y, x, 1, image_(FromIntermediate)(g));
+      THTensor_(set3d)(rgb, y, x, 2, image_(FromIntermediate)(b));
     }
   }
   return 0;
@@ -1502,12 +1504,12 @@ int image_(Main_rgb2lab)(THTensor *rgb, THTensor *lab) {
 
   int y,x;
   real r,g,b,l,a,_b;
-  for (y=0; y<rgb->size[1]; y++) {
-    for (x=0; x<rgb->size[2]; x++) {
+  for (y=0; y<rgb->size[0]; y++) {
+    for (x=0; x<rgb->size[1]; x++) {
       // get RGB
-      r = image_(gamma_expand_sRGB)(THTensor_(get3d)(rgb, 0, y, x));
-      g = image_(gamma_expand_sRGB)(THTensor_(get3d)(rgb, 1, y, x));
-      b = image_(gamma_expand_sRGB)(THTensor_(get3d)(rgb, 2, y, x));
+      r = image_(gamma_expand_sRGB)(THTensor_(get3d)(rgb, y, x, 0));
+      g = image_(gamma_expand_sRGB)(THTensor_(get3d)(rgb, y, x, 1));
+      b = image_(gamma_expand_sRGB)(THTensor_(get3d)(rgb, y, x, 2));
 
       // sRGB to XYZ
       double X = 0.412453 * r + 0.357580 * g + 0.180423 * b;
@@ -1527,9 +1529,9 @@ int image_(Main_rgb2lab)(THTensor *rgb, THTensor *lab) {
       _b = 200 * (fy - fz);
 
       // set lab
-      THTensor_(set3d)(lab, 0, y, x, l);
-      THTensor_(set3d)(lab, 1, y, x, a);
-      THTensor_(set3d)(lab, 2, y, x, _b);
+      THTensor_(set3d)(lab, y, x, 0, l);
+      THTensor_(set3d)(lab, y, x, 1, a);
+      THTensor_(set3d)(lab, y, x, 2, _b);
     }
   }
   return 0;
@@ -1552,12 +1554,12 @@ int image_(Main_lab2rgb)(THTensor *lab,THTensor *rgb ) {
   double xn = 0.950456;
   double zn = 1.088754;
 
-  for (y=0; y<lab->size[1]; y++) {
-    for (x=0; x<lab->size[2]; x++) {
+  for (y=0; y<lab->size[0]; y++) {
+    for (x=0; x<lab->size[1]; x++) {
       // get lab
-      l = THTensor_(get3d)(lab, 0, y, x);
-      a = THTensor_(get3d)(lab, 1, y, x);
-      _b = THTensor_(get3d)(lab, 2, y, x);
+      l = THTensor_(get3d)(lab, y, x, 0);
+      a = THTensor_(get3d)(lab, y, x, 1);
+      _b = THTensor_(get3d)(lab, y, x, 2);
 
       // LAB to XYZ
       double fy = (l + 16) / 116;
@@ -1580,9 +1582,9 @@ int image_(Main_lab2rgb)(THTensor *lab,THTensor *rgb ) {
       b =  0.0556434 * X - 0.2040259 * Y + 1.0572252 * Z;
 
       // set rgb
-      THTensor_(set3d)(rgb, 0, y, x, image_(gamma_compress_sRGB(r)));
-      THTensor_(set3d)(rgb, 1, y, x, image_(gamma_compress_sRGB(g)));
-      THTensor_(set3d)(rgb, 2, y, x, image_(gamma_compress_sRGB(b)));
+      THTensor_(set3d)(rgb, y, x, 0, image_(gamma_compress_sRGB(r)));
+      THTensor_(set3d)(rgb, y, x, 1, image_(gamma_compress_sRGB(g)));
+      THTensor_(set3d)(rgb, y, x, 2, image_(gamma_compress_sRGB(b)));
     }
   }
   return 0;
@@ -1601,9 +1603,9 @@ int image_(Main_lab2rgb)(THTensor *lab, THTensor *rgb) {
 
 /* Vertically flip an image */
 int image_(Main_vflip)(THTensor *dst, THTensor *src) {
-  int width = dst->size[2];
-  int height = dst->size[1];
-  int channels = dst->size[0];
+  int height = dst->size[0];
+  int width = dst->size[1];
+  int channels = dst->size[2];
   long *is = src->stride;
   long *os = dst->stride;
 
@@ -1616,22 +1618,22 @@ int image_(Main_vflip)(THTensor *dst, THTensor *src) {
       /* not in-place.
        * this branch could be removed by first duplicating the src into dst then doing inplace */
 #pragma omp parallel for private(k, x, y)
-      for(k=0; k<channels; k++) {
-          for (y=0; y<height; y++) {
-            for (x=0; x<width; x++) {
-                dst_data[ k*os[0] + (height-1-y)*os[1] + x*os[2] ] = src_data[ k*is[0] + y*is[1] + x*is[2] ];
-            }
+      for (y=0; y<height; y++) {
+        for (x=0; x<width; x++) {
+      	  for(k=0; k<channels; k++) {
+             dst_data[ k*os[2] + (height-1-y)*os[0] + x*os[1] ] = src_data[ k*is[2] + y*is[0] + x*is[1] ];
           }
+        }
       }
   } else {
       /* in-place  */
       real swap, * src_px,  * dst_px;
       long half_height = height >> 1;
-      for(k=0; k<channels; k++) {
-          for (y=0; y < half_height; y++) {
-            for (x=0; x<width; x++) {
-                src_px = src_data + k*is[0] + y*is[1] + x*is[2];
-                dst_px =  dst_data + k*is[0] + (height-1-y)*is[1] + x*is[2];
+      for (y=0; y < half_height; y++) {
+        for (x=0; x<width; x++) {
+	        for(k=0; k<channels; k++) {
+                src_px = src_data + k*is[2] + y*is[0] + x*is[1];
+                dst_px =  dst_data + k*is[2] + (height-1-y)*is[0] + x*is[1];
                 swap = *dst_px;
                 *dst_px = *src_px;
                 *src_px = swap;
@@ -1646,9 +1648,9 @@ int image_(Main_vflip)(THTensor *dst, THTensor *src) {
 /* Horizontally flip an image */
 int image_(Main_hflip)(THTensor *dst, THTensor *src) {
   
-  int width = dst->size[2];
-  int height = dst->size[1];
-  int channels = dst->size[0];
+  int height = dst->size[0];
+  int width = dst->size[1];
+  int channels = dst->size[2];
   long *is = src->stride;
   long *os = dst->stride;
 
@@ -1661,10 +1663,10 @@ int image_(Main_hflip)(THTensor *dst, THTensor *src) {
       /* not in-place.
        * this branch could be removed by first duplicating the src into dst then doing inplace */
 #pragma omp parallel for private(k, x, y)
-      for(k=0; k<channels; k++) {
-          for (y=0; y<height; y++) {
-              for (x=0; x<width; x++) {
-                  dst_data[ k*os[0] + y*os[1] + (width-x-1)*os[2] ] = src_data[ k*is[0] + y*is[1] + x*is[2] ];
+      for (y=0; y<height; y++) {
+         for (x=0; x<width; x++) {
+      		   for(k=0; k<channels; k++) {
+                 dst_data[ k*os[2] + y*os[0] + (width-x-1)*os[1] ] = src_data[ k*is[2] + y*is[0] + x*is[1] ];
               }
           }
       }
@@ -1672,11 +1674,11 @@ int image_(Main_hflip)(THTensor *dst, THTensor *src) {
       /* in-place  */
       real swap, * src_px,  * dst_px;
       long half_width = width >> 1;
-      for(k=0; k<channels; k++) {
-          for (y=0; y < height; y++) {
-            for (x=0; x<half_width; x++) {
-                src_px = src_data + k*is[0] + y*is[1] + x*is[2];
-                dst_px =  dst_data + k*is[0] + y*is[1] + (width-x-1)*is[2];
+      for (y=0; y < height; y++) {
+        for (x=0; x<half_width; x++) {
+      	  for(k=0; k<channels; k++) {
+                src_px = src_data + k*is[2] + y*is[0] + x*is[1];
+                dst_px =  dst_data + k*is[2] + y*is[0] + (width-x-1)*is[1];
                 swap = *dst_px;
                 *dst_px = *src_px;
                 *src_px = swap;
@@ -1776,19 +1778,19 @@ static inline void image_(Main_bicubicInterpolate)(
   temp_t dx = ix - x_pix;
   temp_t dy = iy - y_pix;
 
-  for (k=0; k<size[0]; k++) {
+  for (k=0; k<size[2]; k++) {
     #pragma unroll
     for (i = 0; i < 4; i++) {
       long v = y_pix + i - 1;
-      real* data = &src[k * is[0] + v * is[1]];
+      real* data = &src[k * is[2] + v * is[0]];
 
       #pragma unroll
       for (j = 0; j < 4; j++) {
         long u = x_pix + j - 1;
-        if (bounds_check && (v < 0 || v >= size[1] || u < 0 || u >= size[2])) {
+        if (bounds_check && (v < 0 || v >= size[0] || u < 0 || u >= size[1])) {
           p[j] = pad_value;
         } else {
-          p[j] = data[u * is[2]];
+          p[j] = data[u * is[0]];
         }
       }
 
@@ -1796,7 +1798,7 @@ static inline void image_(Main_bicubicInterpolate)(
     }
 
     temp_t value = image_(Main_cubicInterpolate)(arr[0], arr[1], arr[2], arr[3], dy);
-    dst[k * os[0]] = image_(FromIntermediate)(value);
+    dst[k * os[2]] = image_(FromIntermediate)(value);
   }
 }
 
@@ -1808,11 +1810,11 @@ static inline void image_(Main_bicubicInterpolate)(
 int image_(Main_warp)(THTensor *dst, THTensor *src, THTensor *flowfield, int mode, int offset_mode, int clamp_mode, real pad_value ) {
   
   // dims
-  int width = dst->size[2];
-  int height = dst->size[1];
-  int src_width = src->size[2];
-  int src_height = src->size[1];
-  int channels = dst->size[0];
+  int height = dst->size[0];
+  int width = dst->size[1];
+  int src_height = src->size[0];
+  int src_width = src->size[1];
+  int channels = dst->size[2];
   long *is = src->stride;
   long *os = dst->stride;
   long *fs = flowfield->stride;
@@ -1828,8 +1830,8 @@ int image_(Main_warp)(THTensor *dst, THTensor *src, THTensor *flowfield, int mod
   for (y=0; y<height; y++) {
     for (x=0; x<width; x++) {
       // subpixel position:
-      float flow_y = flow_data[ 0*fs[0] + y*fs[1] + x*fs[2] ];
-      float flow_x = flow_data[ 1*fs[0] + y*fs[1] + x*fs[2] ];
+      float flow_y = flow_data[ 0*fs[2] + y*fs[0] + x*fs[1] ];
+      float flow_x = flow_data[ 1*fs[2] + y*fs[0] + x*fs[1] ];
       float iy = offset_mode*y + flow_y;
       float ix = offset_mode*x + flow_x;
 
@@ -1843,7 +1845,7 @@ int image_(Main_warp)(THTensor *dst, THTensor *src, THTensor *flowfield, int mod
       if (off_image == 1 && clamp_mode == 1) {
         // We're off the image and we're clamping the input image to 0
         for (k=0; k<channels; k++) {
-          dst_data[ k*os[0] + y*os[1] + x*os[2] ] = pad_value;
+          dst_data[ k*os[2] + y*os[0] + x*os[1] ] = pad_value;
         }
       } else {
         ix = MAX(ix,0); ix = MIN(ix,src_width-1);
@@ -1871,11 +1873,11 @@ int image_(Main_warp)(THTensor *dst, THTensor *src, THTensor *flowfield, int mod
 
             // weighted sum of neighbors:
             for (k=0; k<channels; k++) {
-              dst_data[ k*os[0] + y*os[1] + x*os[2] ] = image_(FromIntermediate)(
-                  src_data[ k*is[0] +               iy_nw*is[1] +              ix_nw*is[2] ] * nw
-                + src_data[ k*is[0] +               iy_ne*is[1] + MIN(ix_ne,src_width-1)*is[2] ] * ne
-                + src_data[ k*is[0] + MIN(iy_sw,src_height-1)*is[1] +              ix_sw*is[2] ] * sw
-                + src_data[ k*is[0] + MIN(iy_se,src_height-1)*is[1] + MIN(ix_se,src_width-1)*is[2] ] * se);
+              dst_data[ k*os[2] + y*os[0] + x*os[1] ] = image_(FromIntermediate)(
+                  src_data[ k*is[2] +               iy_nw*is[0] +              ix_nw*is[1] ] * nw
+                + src_data[ k*is[2] +               iy_ne*is[0] + MIN(ix_ne,src_width-1)*is[1] ] * ne
+                + src_data[ k*is[2] + MIN(iy_sw,src_height-1)*is[0] +              ix_sw*is[1] ] * sw
+                + src_data[ k*is[2] + MIN(iy_se,src_height-1)*is[0] + MIN(ix_se,src_width-1)*is[1] ] * se);
             }
           }
           break;
@@ -1887,7 +1889,7 @@ int image_(Main_warp)(THTensor *dst, THTensor *src, THTensor *flowfield, int mod
 
             // weighted sum of neighbors:
             for (k=0; k<channels; k++) {
-              dst_data[ k*os[0] + y*os[1] + x*os[2] ] = src_data[ k*is[0] + iy_n*is[1] + ix_n*is[2] ];
+              dst_data[ k*os[2] + y*os[0] + x*os[1] ] = src_data[ k*is[2] + iy_n*is[0] + ix_n*is[1] ];
             }
           }
           break;
@@ -1896,7 +1898,7 @@ int image_(Main_warp)(THTensor *dst, THTensor *src, THTensor *flowfield, int mod
             // We only need to do bounds checking if ix or iy are near the edge
             int edge = !(iy >= 1 && iy < src_height - 2 && ix >= 1 && ix < src_width - 2);
 
-            real* dst = dst_data + y*os[1] + x*os[2];
+            real* dst = dst_data + y*os[0] + x*os[1];
             if (edge) {
               image_(Main_bicubicInterpolate)(src_data, is, src->size, ix, iy, dst, os, pad_value, 1);
             } else {
@@ -1965,7 +1967,7 @@ int image_(Main_warp)(THTensor *dst, THTensor *src, THTensor *flowfield, int mod
                 long curu = MAX(MIN((long)(src_width-1), u), 0);
                 for (v=y_pix-rad+1, j=0; v<=y_pix+rad; v++, j++) {
                   long curv = MAX(MIN((long)(src_height-1), v), 0);
-                  temp_t Suv = src_data[k * is[0] + curv * is[1] + curu * is[2]];
+                  temp_t Suv = src_data[k * is[2] + curv * is[0] + curu * is[1]];
 
                   temp_t weight = Lu[i] * Lv[j];
                   result += (Suv * weight);
@@ -1977,7 +1979,7 @@ int image_(Main_warp)(THTensor *dst, THTensor *src, THTensor *flowfield, int mod
               // Again,  I assume that since the image is stored as reals we
               // don't have to worry about clamping to min and max int (to
               // prevent over or underflow)
-              dst_data[ k*os[0] + y*os[1] + x*os[2] ] = image_(FromIntermediate)(result);
+              dst_data[ k*os[2] + y*os[0] + x*os[1] ] = image_(FromIntermediate)(result);
             }
           }
           break;
@@ -1999,8 +2001,8 @@ int image_(Main_gaussian)(THTensor *dst,
 		temp_t mean_u,
 		temp_t mean_v)
 {
+	long height = dst->size[0];
   long width = dst->size[1];
-  long height = dst->size[0];
   long *os = dst->stride;
 
   real *dst_data = THTensor_(data)(dst);
@@ -2067,7 +2069,7 @@ int image_(Main_colorize)(THTensor *output, THTensor *input, THTensor *colormap)
   int channels = colormap->size[1];
 
   // generate output
-  THTensor_(resize3d)(output, channels, height, width);
+  THTensor_(resize3d)(output, height, width, channels);
   int x,y,k;
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x++) {
@@ -2083,11 +2085,10 @@ int image_(Main_colorize)(THTensor *output, THTensor *input, THTensor *colormap)
       }
       for (k = 0; k < channels; k++) {
         real color = THTensor_(get2d)(colormap, id, k);
-        THTensor_(set3d)(output, k, y, x, color);
+        THTensor_(set3d)(output, y, x, k, color);
       }
     }
   }
-
   // return nothing
   return 0;
 }
@@ -2102,25 +2103,25 @@ int image_(Main_rgb2y)(THTensor *rgb, THTensor *yim ) {
   	printf("image.rgb2y: dst not 2D\n");
   	exit(0);
   }
-  if (rgb->size[1] != yim->size[0])	{
+  if (rgb->size[0] != yim->size[0])	{
   	printf("image.rgb2y: src and dst not of same height\n");
   	exit(0);
   }
-  if (rgb->size[2] != yim->size[1])	{
+  if (rgb->size[1] != yim->size[1])	{
     printf("image.rgb2y: src and dst not of same width\n");
     exit(0);
   }
 
   int y, x;
   temp_t r, g, b, yc;
-  const int height = rgb->size[1];
-  const int width = rgb->size[2];
+  const int height = rgb->size[0];
+  const int width = rgb->size[1];
   for (y=0; y<height; y++) {
     for (x=0; x<width; x++) {
       // get Rgb
-      r = THTensor_(get3d)(rgb, 0, y, x);
-      g = THTensor_(get3d)(rgb, 1, y, x);
-      b = THTensor_(get3d)(rgb, 2, y, x);
+      r = THTensor_(get3d)(rgb, y, x, 0);
+      g = THTensor_(get3d)(rgb, y, x, 1);
+      b = THTensor_(get3d)(rgb, y, x, 2);
 
       yc = 0.299 * r + 0.587 * g + 0.114 * b;
       THTensor_(set2d)(yim, y, x, image_(FromIntermediate)(yc));
@@ -2132,22 +2133,22 @@ int image_(Main_rgb2y)(THTensor *rgb, THTensor *yim ) {
 static inline void image_(drawPixel)(THTensor *output, int y, int x,
                                      int cr, int cg, int cb) {
 #ifdef TH_REAL_IS_BYTE
-  THTensor_(set3d)(output, 0, y, x, cr);
-  THTensor_(set3d)(output, 1, y, x, cg);
-  THTensor_(set3d)(output, 2, y, x, cb);
+  THTensor_(set3d)(output, y, x, 0, cr);
+  THTensor_(set3d)(output, y, x, 1, cg);
+  THTensor_(set3d)(output, y, x, 2, cb);
 #else
-  THTensor_(set3d)(output, 0, y, x, cr / 255.0f);
-  THTensor_(set3d)(output, 1, y, x, cg / 255.0f);
-  THTensor_(set3d)(output, 2, y, x, cb / 255.0f);
+  THTensor_(set3d)(output, y, x, 0, cr / 255.0f);
+  THTensor_(set3d)(output, y, x, 1, cg / 255.0f);
+  THTensor_(set3d)(output, y, x, 2, cb / 255.0f);
 #endif
 }
 static inline void image_(drawChar)(THTensor *output, int x, int y, unsigned char c, int size,
                                     int cr, int cg, int cb,
                                     int bg_cr, int bg_cg, int bg_cb) {
-  long channels = output->size[0];
-  long height = output->size[1];
-  long width  = output->size[2];
-
+  long height = output->size[0];
+  long width  = output->size[1];
+	long channels = output->size[2];
+  
   /* out of bounds condition, return without drawing */
   if((x >= width)            || // Clip right
      (y >= height)           || // Clip bottom
@@ -2196,10 +2197,10 @@ int image_(Main_drawtext)(THTensor *output,  const char* text, long x, long y, i
   long len = strlen(text);
 
   // dims
-  long channels = output->size[0];
-  long height = output->size[1];
-  long width  = output->size[2];
-
+  long height = output->size[0];
+  long width  = output->size[1];
+	long channels = output->size[2];
+  
   long cursor_y = y;
   long cursor_x = x;
 
@@ -2239,12 +2240,12 @@ int image_(Main_drawRect)(THTensor *output,
   int uoffset = lineWidth - loffset - 1;
   int x1l = (int) MAX(0, x1long - loffset);
   int y1l = (int) MAX(0, y1long - loffset);
-  int x1u = (int) MIN(output->size[2], x1long + uoffset + 1);
-  int y1u = (int) MIN(output->size[1], y1long + uoffset + 1);
+  int x1u = (int) MIN(output->size[1], x1long + uoffset + 1);
+  int y1u = (int) MIN(output->size[0], y1long + uoffset + 1);
   int x2l = (int) MAX(0, x2long - loffset);
   int y2l = (int) MAX(0, y2long - loffset);
-  int x2u = (int) MIN(output->size[2], x2long + uoffset + 1);
-  int y2u = (int) MIN(output->size[1], y2long + uoffset + 1);
+  int x2u = (int) MIN(output->size[1], x2long + uoffset + 1);
+  int y2u = (int) MIN(output->size[0], y2long + uoffset + 1);
 
   for (int y = y1l; y < y2u; y++) {
     for (int x = x1l; x < x1u; x++) {

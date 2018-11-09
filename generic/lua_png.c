@@ -9,6 +9,95 @@
  *
  * Clement: modified for Torch7.
  */
+int libpng_(Main_size)(const char *filename, 
+                              int *height_to_return, 
+                              int *width_to_return,
+                              int *depth_to_return)
+{
+  png_byte header[8];    // 8 is the maximum size that can be checked
+
+  int width, height;
+  png_byte color_type;
+
+  png_structp png_ptr;
+  png_infop info_ptr;
+  libpng_errmsg errmsg;
+  size_t fread_ret;
+  /* open file and test for it being a png */
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    printf("[get_png_size] File %s could not be opened for reading\n", filename);
+    return -1;
+  }
+  fread_ret = fread(header, 1, 8, fp);
+  if (fread_ret != 8) {
+    printf("[get_png_size] File %s error reading header\n", filename);
+    return -1;
+  }
+  
+  if (png_sig_cmp(header, 0, 8)) {
+    printf("[get_png_size] File %s is not recognized as a PNG file\n", filename);
+    return -1;
+  }
+  
+  /* initialize stuff */
+  png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  
+  if (!png_ptr) {
+    printf("[get_png_size] png_create_read_struct failed\n");
+  	return -1;
+  }
+
+  png_set_error_fn(png_ptr, &errmsg, libpng_error_fn, NULL);
+
+  info_ptr = png_create_info_struct(png_ptr);
+  if (!info_ptr) {
+    printf("[get_png_size] png_create_info_struct failed\n");
+    return -1;
+  }
+  
+  if (setjmp(png_jmpbuf(png_ptr))) {
+    printf("[get_png_size] Error during init_io: %s\n", errmsg.str);
+    return -1;
+  }
+
+  png_init_io(png_ptr, fp);
+  png_set_sig_bytes(png_ptr, 8);
+  
+  png_read_info(png_ptr, info_ptr);
+  
+  width      = png_get_image_width(png_ptr, info_ptr);
+  height     = png_get_image_height(png_ptr, info_ptr);
+  color_type = png_get_color_type(png_ptr, info_ptr);
+  png_read_update_info(png_ptr, info_ptr);
+
+  /* get depth */
+  int depth = 0;
+  if (color_type == PNG_COLOR_TYPE_RGBA)
+    depth = 4;
+  else if (color_type == PNG_COLOR_TYPE_RGB)
+    depth = 3;
+  else if (color_type == PNG_COLOR_TYPE_GRAY)
+    depth = 1;
+  else if (color_type == PNG_COLOR_TYPE_GA)
+    depth = 2;
+  else if (color_type == PNG_COLOR_TYPE_PALETTE) {
+    printf("[get_png_size] unsupported type: PALETTE");
+    return -1;
+  }
+  else {
+    printf("[get_png_size] Unknown color space\n");
+    return -1;
+  }
+
+  /* done with file */
+  fclose(fp);
+
+  (*height_to_return) = height;
+  (*width_to_return) = width;
+	(*depth_to_return) = depth;
+  return 3;
+}
 
 THTensor* libpng_(Main_load)(const char *file_name,
                               THByteTensor *src,	                //source tensor, set to NULL if reading from file
@@ -139,7 +228,7 @@ THTensor* libpng_(Main_load)(const char *file_name,
   }
 
   /* alloc tensor */
-  THTensor *tensor = THTensor_(newWithSize3d)(depth, height, width);
+  THTensor *tensor = THTensor_(newWithSize3d)(height, width, depth);
   real *tensor_data = THTensor_(data)(tensor);
 
   /* alloc data in lib format */
@@ -154,14 +243,12 @@ THTensor* libpng_(Main_load)(const char *file_name,
   /* convert image to dest tensor */
   int x,k;
   if ((bit_depth == 16) && (sizeof(real) > 1)) {
-    for (k=0; k<depth; k++) {
-      for (y=0; y<height; y++) {
-	png_byte* row = row_pointers[y];
-	for (x=0; x<width; x++) {
-	  // PNG is big-endian
-	  int val = ((int)row[(x*depth+k)*2] << 8) + row[(x*depth+k)*2+1];
-	  *tensor_data++ = (real)val;
-	}
+    for (y=0; y<height; y++) {
+			png_byte* row = row_pointers[y];
+			for (x=0; x<depth*width; x++) {
+  			// PNG is big-endian
+  			int val = ((int)row[x*2] << 8) + row[x*2+1];
+  			*tensor_data++ = (real)val;
       }
     }
   } else {
@@ -170,14 +257,12 @@ THTensor* libpng_(Main_load)(const char *file_name,
       /* PNG has 16 bit color depth, but the tensor type is byte. */
       stride = 2;
     }
-    for (k=0; k<depth; k++) {
-      for (y=0; y<height; y++) {
-	png_byte* row = row_pointers[y];
-	for (x=0; x<width; x++) {
-	  *tensor_data++ = (real)row[(x*depth+k)*stride];
+    for (y=0; y<height; y++) {
+			png_byte* row = row_pointers[y];
+			for (x=0; x<depth*width; x++) {
+	  		*tensor_data++ = (real)row[x*stride];
 	  //png_byte val = row[x*depth+k];
 	  //THTensor_(set3d)(tensor, k, y, x, (real)val);
-	}
       }
     }
   }
@@ -229,9 +314,9 @@ int libpng_(Main_save)(const char *file_name,
   long depth=0;
    
   if (tensorc->nDimension == 3) {
-    depth = tensorc->size[0];
-    height = tensorc->size[1];
-    width = tensorc->size[2];
+    height = tensorc->size[0];
+    width = tensorc->size[1];
+    depth = tensorc->size[2];
   } else if (tensorc->nDimension == 2) {
     depth = 1;
     height = tensorc->size[0];
@@ -301,14 +386,12 @@ int libpng_(Main_save)(const char *file_name,
     row_pointers[y] = (png_byte*) malloc(png_get_rowbytes(png_ptr,info_ptr));
 
   /* convert image to dest tensor */
-  int x,k;
-  for (k=0; k<depth; k++) {
-    for (y=0; y<height; y++) {
-      png_byte* row = row_pointers[y];
-      for (x=0; x<width; x++) {
-        //row[x*depth+k] = (png_byte)THTensor_(get3d)(tensor, k, y, x);
-        row[x*depth+k] = *tensor_data++;
-      }
+  int x;
+  for (y=0; y<height; y++) {
+    png_byte* row = row_pointers[y];
+    for (x=0; x<depth*width; x++) {
+      //row[x*depth+k] = (png_byte)THTensor_(get3d)(tensor, k, y, x);
+      *row++ = *tensor_data++;
     }
   }
 
@@ -347,97 +430,6 @@ int libpng_(Main_save)(const char *file_name,
     free(_inmem.inmem);
   }
   return 0;
-}
-
-int libpng_(Main_size)(const char *filename, 
-                              int *depth_to_return, 
-                              int *height_to_return, 
-                              int *width_to_return )
-{
-  png_byte header[8];    // 8 is the maximum size that can be checked
-
-  int width, height;
-  png_byte color_type;
-
-  png_structp png_ptr;
-  png_infop info_ptr;
-  libpng_errmsg errmsg;
-  size_t fread_ret;
-  /* open file and test for it being a png */
-  FILE *fp = fopen(filename, "rb");
-  if (!fp) {
-    printf("[get_png_size] File %s could not be opened for reading\n", filename);
-    return -1;
-  }
-  fread_ret = fread(header, 1, 8, fp);
-  if (fread_ret != 8) {
-    printf("[get_png_size] File %s error reading header\n", filename);
-    return -1;
-  }
-  
-  if (png_sig_cmp(header, 0, 8)) {
-    printf("[get_png_size] File %s is not recognized as a PNG file\n", filename);
-    return -1;
-  }
-  
-  /* initialize stuff */
-  png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-  
-  if (!png_ptr) {
-    printf("[get_png_size] png_create_read_struct failed\n");
-  	return -1;
-  }
-
-  png_set_error_fn(png_ptr, &errmsg, libpng_error_fn, NULL);
-
-  info_ptr = png_create_info_struct(png_ptr);
-  if (!info_ptr) {
-    printf("[get_png_size] png_create_info_struct failed\n");
-    return -1;
-  }
-  
-  if (setjmp(png_jmpbuf(png_ptr))) {
-    printf("[get_png_size] Error during init_io: %s\n", errmsg.str);
-    return -1;
-  }
-
-  png_init_io(png_ptr, fp);
-  png_set_sig_bytes(png_ptr, 8);
-  
-  png_read_info(png_ptr, info_ptr);
-  
-  width      = png_get_image_width(png_ptr, info_ptr);
-  height     = png_get_image_height(png_ptr, info_ptr);
-  color_type = png_get_color_type(png_ptr, info_ptr);
-  png_read_update_info(png_ptr, info_ptr);
-
-  /* get depth */
-  int depth = 0;
-  if (color_type == PNG_COLOR_TYPE_RGBA)
-    depth = 4;
-  else if (color_type == PNG_COLOR_TYPE_RGB)
-    depth = 3;
-  else if (color_type == PNG_COLOR_TYPE_GRAY)
-    depth = 1;
-  else if (color_type == PNG_COLOR_TYPE_GA)
-    depth = 2;
-  else if (color_type == PNG_COLOR_TYPE_PALETTE) {
-    printf("[get_png_size] unsupported type: PALETTE");
-    return -1;
-  }
-  else {
-    printf("[get_png_size] Unknown color space\n");
-    return -1;
-  }
-
-  /* done with file */
-  fclose(fp);
-
-  (*depth_to_return) = depth;
-  (*height_to_return) = height;
-  (*width_to_return) = width;
-
-  return 3;
 }
 
 #endif
