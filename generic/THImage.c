@@ -213,24 +213,14 @@ void image_(save)(char* filename, THTensor* src)
 	}
 	THTensor_(free)(cp);
 }
-THTensor* image_(specificCrop)(THTensor* src, const char *crop_type, long height, long width)
+THTensor* image_(specificCrop)(THTensor* src, THTensor* dst, const char *crop_type, long height, long width)
 {
-    THTensor *dst = NULL;
-    long iheight, iwidth;
-    if (src->nDimension == 2) {
-        dst = THTensor_(newWithSize2d)(height, width);
-        iheight = src->size[0];
-        iwidth = src->size[1];
-     }
-    else if (src->nDimension == 3) {
-        dst = THTensor_(newWithSize3d)(height, width, src->size[2]);
-        iheight = src->size[0];
-        iwidth = src->size[1];
-     }         
-    else {
-        printf("Image not HxW or HxWxC\n");
+    long iheight = src->size[0], iwidth = src->size[1];
+    if ((src->nDimension != dst->nDimension) || (src->size[0] != dst->size[0]) || (src->size[1] != dst->size[1]) || ((src->nDimension == 3) && (src->size[2] != dst->size[2])))
+    {
+        printf("Destination tensor for cropping output not of right size");
         exit(0);
-    }   
+    }
     long startx, starty; 
     if (strcmp(crop_type,"c")==0)
     {
@@ -264,19 +254,13 @@ THTensor* image_(specificCrop)(THTensor* src, const char *crop_type, long height
     image_(Main_cropNoScale)(src, dst, startx, starty);
     return dst;   
 }
-THTensor* image_(crop)(THTensor* src, long startx, long starty, long endx, long endy)
+THTensor* image_(crop)(THTensor* src, THTensor* dst, long startx, long starty, long endx, long endy)
 {
-    THTensor *dst = NULL;
-    if (src->nDimension == 2) {
-        dst = THTensor_(newWithSize2d)(endy-starty, endx-startx);
-    }
-    else if (src->nDimension == 3) {
-        dst = THTensor_(newWithSize3d)(endy-starty, endx-startx, src->size[2]);
-    }    
-    else {
-        printf("Image not HxW or HxWxC\n");
+    if ((src->nDimension != dst->nDimension) || (src->size[0] != dst->size[0]) || (src->size[1] != dst->size[1]) || ((src->nDimension == 3) && (src->size[2] != dst->size[2])))
+    {
+        printf("Destination tensor for cropping output not of right size");
         exit(0);
-    }    
+    } 
     image_(Main_cropNoScale)(src, dst, startx, starty);
     return dst;
 }
@@ -457,27 +441,13 @@ THTensor* image_(warp)(THTensor* src, THTensor* flow_field, const char* mode, in
 }
 THTensor* image_(hflip)(THTensor* src)
 {
-    THTensor* dst=NULL;
-    if (src->nDimension == 3)
-        dst = THTensor_(newWithSize3d)(src->size[0], src->size[1], src->size[2]);
-    else {
-        printf("Only HxWxC dimension images supported for hflip\n");
-        exit(0);
-     }
-     image_(Main_hflip)(dst, src);
-     return dst;
+     image_(Main_hflip)(src, src);
+     return src;
 }
 THTensor* image_(vflip)(THTensor* src)
 {
-    THTensor* dst=NULL;
-    if (src->nDimension == 3)
-        dst = THTensor_(newWithSize3d)(src->size[0], src->size[1], src->size[2]);
-    else {
-        printf("Only HxWxC dimension images supported for vflip\n");
-        exit(0);
-     }
-     image_(Main_vflip)(dst, src);
-     return dst;
+     image_(Main_vflip)(src, src);
+     return src;
 }
 THTensor* image_(flip)(THTensor* src, long flip_dim)
 {

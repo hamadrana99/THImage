@@ -6,6 +6,7 @@ THTensor* image_(load)(const char* filename, int depth);
 THLongTensor* image_(getSize)(const char* filename);    
 void image_(save)(char* filename, THTensor* src);
 THTensor* image_(specificCrop)(THTensor* src, 
+                               THTensor* dst,
                                //c for center, tl for top left,
                                //tr for top right, bl for bottom
                                //left, br for bottom right
@@ -13,6 +14,7 @@ THTensor* image_(specificCrop)(THTensor* src,
                                long height, 
                                long width);
 THTensor* image_(crop)(THTensor* src, 
+                       THTensor* dst,
                        long startx, 
                        long starty, 
                        long endx, 
