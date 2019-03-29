@@ -213,7 +213,7 @@ void image_(save)(char* filename, THTensor* src)
 	}
 	THTensor_(free)(cp);
 }
-THTensor* image_(specificCrop)(THTensor* src, THTensor* dst, const char *crop_type, long height, long width)
+void image_(specificCrop)(THTensor* src, THTensor* dst, const char *crop_type, long height, long width)
 {
     long iheight = src->size[0], iwidth = src->size[1];
     if ((src->nDimension != dst->nDimension) || (src->size[0] != dst->size[0]) || (src->size[1] != dst->size[1]) || ((src->nDimension == 3) && (src->size[2] != dst->size[2])))
@@ -252,9 +252,9 @@ THTensor* image_(specificCrop)(THTensor* src, THTensor* dst, const char *crop_ty
        exit(0);
     }         
     image_(Main_cropNoScale)(src, dst, startx, starty);
-    return dst;   
 }
-THTensor* image_(crop)(THTensor* src, THTensor* dst, long startx, long starty, long endx, long endy)
+
+void image_(crop)(THTensor* src, THTensor* dst, long startx, long starty, long endx, long endy)
 {
     if ((src->nDimension != dst->nDimension) || (src->size[0] != dst->size[0]) || (src->size[1] != dst->size[1]) || ((src->nDimension == 3) && (src->size[2] != dst->size[2])))
     {
@@ -262,7 +262,6 @@ THTensor* image_(crop)(THTensor* src, THTensor* dst, long startx, long starty, l
         exit(0);
     } 
     image_(Main_cropNoScale)(src, dst, startx, starty);
-    return dst;
 }
 THTensor* image_(translate)(THTensor* src, long x, long y)
 {
@@ -439,15 +438,13 @@ THTensor* image_(warp)(THTensor* src, THTensor* flow_field, const char* mode, in
     image_(Main_warp)(dst, src, flow, mode_select, offset_mode, clamp_mode_select, pad_value);
     return dst;         
 }
-THTensor* image_(hflip)(THTensor* src)
+void image_(hflip)(THTensor* dst, THTensor* src)
 {
-     image_(Main_hflip)(src, src);
-     return src;
+     image_(Main_hflip)(dst, src);
 }
-THTensor* image_(vflip)(THTensor* src)
+void image_(vflip)(THTensor* src, THTensor* dst)
 {
-     image_(Main_vflip)(src, src);
-     return src;
+     image_(Main_vflip)(dst, src);
 }
 THTensor* image_(flip)(THTensor* src, long flip_dim)
 {
