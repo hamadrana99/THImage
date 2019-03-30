@@ -216,10 +216,15 @@ void image_(save)(char* filename, THTensor* src)
 void image_(specificCrop)(THTensor* src, THTensor* dst, const char *crop_type, long height, long width)
 {
     long iheight = src->size[0], iwidth = src->size[1];
-    if ((src->nDimension != dst->nDimension) || (src->size[0] != dst->size[0]) || (src->size[1] != dst->size[1]) || ((src->nDimension == 3) && (src->size[2] != dst->size[2])))
+    if ((src->nDimension != dst->nDimension) || (height != dst->size[0]) || (width != dst->size[1]) || ((src->nDimension == 3) && (src->size[2] != dst->size[2])))
     {
         printf("Destination tensor for cropping output not of right size");
         exit(0);
+    }
+    if ((height>src->size[0]) || (width>src->size[1]))
+    {
+      printf("Source is smaller than desired crop");
+      exit(0);
     }
     long startx, starty; 
     if (strcmp(crop_type,"c")==0)
@@ -256,11 +261,16 @@ void image_(specificCrop)(THTensor* src, THTensor* dst, const char *crop_type, l
 
 void image_(crop)(THTensor* src, THTensor* dst, long startx, long starty, long endx, long endy)
 {
-    if ((src->nDimension != dst->nDimension) || (src->size[0] != dst->size[0]) || (src->size[1] != dst->size[1]) || ((src->nDimension == 3) && (src->size[2] != dst->size[2])))
+    if ((src->nDimension != dst->nDimension) || (height != dst->size[0]) || (width != dst->size[1]) || ((src->nDimension == 3) && (src->size[2] != dst->size[2])))
     {
         printf("Destination tensor for cropping output not of right size");
         exit(0);
-    } 
+    }
+    if ((height>src->size[0]) || (width>src->size[1]))
+    {
+      printf("Source is smaller than desired crop");
+      exit(0);
+    }
     image_(Main_cropNoScale)(src, dst, startx, starty);
 }
 THTensor* image_(translate)(THTensor* src, long x, long y)
