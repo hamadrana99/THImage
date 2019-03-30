@@ -266,7 +266,7 @@ void image_(crop)(THTensor* src, THTensor* dst, long startx, long starty, long e
         printf("Destination tensor for cropping output not of right size");
         exit(0);
     }
-    if (((endy-starty+1)>src->size[0]) || ((endx-startx+1)>src->size[1]))
+    if (((endy-starty)>src->size[0]) || ((endx-startx)>src->size[1]))
     {
       printf("Source is smaller than desired crop");
       exit(0);
