@@ -261,7 +261,7 @@ void image_(specificCrop)(THTensor* src, THTensor* dst, const char *crop_type, l
 
 void image_(crop)(THTensor* src, THTensor* dst, long startx, long starty, long endx, long endy)
 {
-    if ((src->nDimension != dst->nDimension) || ((endy-starty+1) != dst->size[0]) || ((endx-startx+1) != dst->size[1]) || ((src->nDimension == 3) && (src->size[2] != dst->size[2])))
+    if ((src->nDimension != dst->nDimension) || ((endy-starty) != dst->size[0]) || ((endx-startx) != dst->size[1]) || ((src->nDimension == 3) && (src->size[2] != dst->size[2])))
     {
         printf("Destination tensor for cropping output not of right size");
         exit(0);
