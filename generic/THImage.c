@@ -199,17 +199,14 @@ void image_(save)(char* filename, THTensor* src)
 		exit(0);
 	}
 }
-THTensor* image_(specificCrop)(THTensor* src, const char *crop_type, long height, long width)
+THTensor* image_(specificCrop)(THTensor* dst, THTensor* src, const char *crop_type, long height, long width)
 {
-    THTensor *dst = NULL;
     long iheight, iwidth;
     if (src->nDimension == 2) {
-        dst = THTensor_(newWithSize2d)(height, width);
         iheight = src->size[0];
         iwidth = src->size[1];
      }
     else if (src->nDimension == 3) {
-        dst = THTensor_(newWithSize3d)(src->size[0], height, width);
         iheight = src->size[1];
         iwidth = src->size[2];
      }         
@@ -445,15 +442,8 @@ THTensor* image_(warp)(THTensor* src, THTensor* flow_field, const char* mode, in
     image_(Main_warp)(dst, src, flow, mode_select, offset_mode, clamp_mode_select, pad_value);
     return dst;         
 }
-THTensor* image_(hflip)(THTensor* src)
+THTensor* image_(hflip)(THTensor* dst, THTensor* src)
 {
-    THTensor* dst=NULL;
-    if (src->nDimension == 3)
-        dst = THTensor_(newWithSize3d)(src->size[0], src->size[1], src->size[2]);
-    else {
-        printf("Only CxWxH dimension images supported for hflip\n");
-        exit(0);
-     }
      image_(Main_hflip)(dst, src);
      return dst;
 }
