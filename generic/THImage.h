@@ -5,15 +5,16 @@
 THTensor* image_(load)(const char* filename, int depth);        
 THLongTensor* image_(getSize)(const char* filename);    
 void image_(save)(char* filename, THTensor* src);
-THTensor* image_(specificCrop)(THTensor* dst,
-                               THTensor* src, 
+THTensor* image_(specificCrop)(THTensor* src,
+                               THTensor* dst, 
                                //c for center, tl for top left,
                                //tr for top right, bl for bottom
                                //left, br for bottom right
                                const char *crop_type,     
                                long height, 
                                long width);
-THTensor* image_(crop)(THTensor* src, 
+THTensor* image_(crop)(THTensor* src,
+                       THTensor* dst, 
                        long startx, 
                        long starty, 
                        long endx, 
@@ -47,7 +48,7 @@ THTensor* image_(warp)(THTensor* src,
                        //clamp or pad
                        const char* clamp_mode, 
                        real pad_value);
-THTensor* image_(hflip)(THTensor* dst, THTensor* src);
+THTensor* image_(hflip)(THTensor* src, THTensor* dst);
 THTensor* image_(vflip)(THTensor* src);
 THTensor* image_(flip)(THTensor* src, long flip_dim);
 THTensor* image_(minMax)(THTensor* src, real min, real max);

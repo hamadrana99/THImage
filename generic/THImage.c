@@ -199,7 +199,7 @@ void image_(save)(char* filename, THTensor* src)
 		exit(0);
 	}
 }
-THTensor* image_(specificCrop)(THTensor* dst, THTensor* src, const char *crop_type, long height, long width)
+THTensor* image_(specificCrop)(THTensor* src, THTensor* dst, const char *crop_type, long height, long width)
 {
     long iheight, iwidth;
     if (src->nDimension == 2) {
@@ -247,7 +247,7 @@ THTensor* image_(specificCrop)(THTensor* dst, THTensor* src, const char *crop_ty
     image_(Main_cropNoScale)(src, dst, startx, starty);
     return dst;   
 }
-THTensor* image_(crop)(THTensor* src, long startx, long starty, long endx, long endy)
+THTensor* image_(crop)(THTensor* src, THTensor* dst, long startx, long starty, long endx, long endy)
 {
     THTensor *dst = NULL;
     if (src->nDimension == 2) {
@@ -442,7 +442,7 @@ THTensor* image_(warp)(THTensor* src, THTensor* flow_field, const char* mode, in
     image_(Main_warp)(dst, src, flow, mode_select, offset_mode, clamp_mode_select, pad_value);
     return dst;         
 }
-THTensor* image_(hflip)(THTensor* dst, THTensor* src)
+THTensor* image_(hflip)(THTensor* src, THTensor* dst)
 {
      image_(Main_hflip)(dst, src);
      return dst;
