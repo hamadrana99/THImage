@@ -249,17 +249,6 @@ THTensor* image_(specificCrop)(THTensor* src, THTensor* dst, const char *crop_ty
 }
 THTensor* image_(crop)(THTensor* src, THTensor* dst, long startx, long starty, long endx, long endy)
 {
-    THTensor *dst = NULL;
-    if (src->nDimension == 2) {
-        dst = THTensor_(newWithSize2d)(endy-starty, endx-startx);
-    }
-    else if (src->nDimension == 3) {
-        dst = THTensor_(newWithSize3d)(src->size[0], endy-starty, endx-startx);
-    }    
-    else {
-        printf("Image not HxW or CxHxW\n");
-        exit(0);
-    }    
     image_(Main_cropNoScale)(src, dst, startx, starty);
     return dst;
 }
