@@ -255,9 +255,9 @@ THTensor* libjpeg_(Main_load)(const char *filename, THByteTensor *src)
       real *td3 = tdata + 2 * (height * width) + j * width;
       const unsigned char *buf = buffer[0];
       for(i = 0; i < width; i++) {
-        *td1++ = (real)buf[chans * i + 2];
+        *td1++ = (real)buf[chans * i + 0];
         *td2++ = (real)buf[chans * i + 1];
-        *td3++ = (real)buf[chans * i + 0];
+        *td3++ = (real)buf[chans * i + 2];
       }
     } else if (chans == 1) { /* special-case for speed */
       real *td = tdata + j * width;
