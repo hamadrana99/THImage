@@ -9,8 +9,8 @@ THTensor* image_(todepth)(THTensor* src, int depth)
 	{
 		if (src->nDimension == 2)			// we have HxW, all good
 		{
-			dst = THTensor_(new)();
-			THTensor_(unsqueeze1d)(dst, src, 0);
+		  dst = src;
+			THTensor_(unsqueeze1d)(dst, NULL, 0);
 		}
 		else if (src->size[0]==1)			//loaded image is 1xHxW, all good
 		{
@@ -18,25 +18,22 @@ THTensor* image_(todepth)(THTensor* src, int depth)
 		}
 		else if (src->size[0]==2)			//loaded image has 2 channels
 		{
-    		dst = THTensor_(new)();
-			THTensor_(select)(dst,src,0,0);	//return just the first channel
+		  dst = src;
+			THTensor_(select)(dst,NULL,0,0);	//return just the first channel
 		}
 		else if (src->size[0]==3)			//loaded image has 3 channels
 		{
-			THTensor* y = THTensor_(newWithSize2d)(src->size[1],src->size[2]);
-			image_(Main_rgb2y)(src, y);
-			dst = THTensor_(new)();
-			THTensor_(unsqueeze1d)(dst, y, 0);
+			THTensor* dst = THTensor_(newWithSize2d)(src->size[1],src->size[2]);
+			image_(Main_rgb2y)(src, dst);
+			THTensor_(unsqueeze1d)(dst, NULL, 0);
 			THTensor_(free)(src);
 		}
 		else if (src->size[0]==4)
 		{	
-			THTensor* y = THTensor_(newWithSize2d)(src->size[1],src->size[2]);
-			THTensor* three_channel_slice=THTensor_(new)();
-			THTensor_(narrow)(three_channel_slice, src, 0,0,3);
-			image_(Main_rgb2y)(three_channel_slice , y);
-			dst = THTensor_(new)();
-			THTensor_(unsqueeze1d)(dst, y, 0);
+			THTensor* dst = THTensor_(newWithSize2d)(src->size[1],src->size[2]);
+			THTensor_(narrow)(src, NULL, 0,0,3);
+			image_(Main_rgb2y)(src , dst);
+			THTensor_(unsqueeze1d)(dst, NULL, 0);
 			THTensor_(free)(src);
 			
 		}
@@ -58,6 +55,7 @@ THTensor* image_(todepth)(THTensor* src, int depth)
 			THTensor_(copy)(slice, src);
 			THTensor_(select)(slice, dst, 0, 2);
 			THTensor_(copy)(slice, src);
+			THTensor_(free)(slice);
 			THTensor_(free)(src);
 		}
 		else if (src->size[0]==1)	//loaded image has 1 channel
@@ -70,6 +68,7 @@ THTensor* image_(todepth)(THTensor* src, int depth)
 			THTensor_(copy)(slice, src);
 			THTensor_(select)(slice, dst, 0, 2);
 			THTensor_(copy)(slice, src);
+			THTensor_(free)(slice);
 			THTensor_(free)(src);
 		}
 		else if (src->size[0]==3)			//loaded image has 3 channels
@@ -78,8 +77,8 @@ THTensor* image_(todepth)(THTensor* src, int depth)
 		}
 		else if (src->size[0]==4)
 		{
-		    dst = THTensor_(new)();
-			THTensor_(narrow)(dst,src,0,0,3);
+		    dst = src;
+  			THTensor_(narrow)(dst,NULL,0,0,3);
 		}
 		else
 		{
